@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Configuration - Amadeus</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600&display=swap"
+        rel="stylesheet">
+    <!-- Custom CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        :root {
+            --bg-dark: #050505;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0a0;
+            --c-cyan: #00FFFF;
+            --c-magenta: #FF00FF;
+            --c-yellow: #FFFF00;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-primary);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* THREE.JS BG */
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .config-container {
+            position: relative;
+            z-index: 10;
+            background: rgba(10, 10, 10, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 3rem;
+            width: 100%;
+            max-width: 500px;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .config-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .config-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2rem;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .config-subtitle {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .form-label-tech {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.75rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--c-cyan);
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+
+        .form-control-tech {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #fff;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.9rem;
+            padding: 1rem;
+            border-radius: 8px;
+            width: 100%;
+            margin-bottom: 1.5rem;
+            transition: all 0.3s;
+        }
+
+        .form-control-tech:focus {
+            background: #000;
+            border-color: var(--c-cyan);
+            color: #fff;
+            outline: none;
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.2);
+        }
+
+        .btn-tech {
+            background: rgba(0, 255, 255, 0.1);
+            border: 1px solid var(--c-cyan);
+            color: var(--c-cyan);
+            font-family: 'Orbitron', sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-size: 0.9rem;
+            padding: 1rem;
+            width: 100%;
+            margin-top: 1rem;
+            transition: all 0.3s;
+            cursor: pointer;
+            border-radius: 8px;
+            font-weight: 600;
+        }
+
+        .btn-tech:hover {
+            background: var(--c-cyan);
+            color: #000;
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.4);
+        }
+
+        .back-link {
+            display: block;
+            text-align: center;
+            margin-top: 1.5rem;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.85rem;
+            transition: color 0.3s;
+        }
+
+        .back-link:hover {
+            color: #fff;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Three.js Background -->
+    <div id="canvas-container"></div>
+
+    <div class="config-container">
+        <div class="config-header">
+            <h1 class="config-title">Log in</h1>
+            <p class="config-subtitle">Authenticate & Connect to Local Host</p>
+        </div>
+
+        <label class="form-label-tech">JWT Access Token</label>
+        <input type="text" class="form-control-tech" id="jwt-token-input" placeholder="eyJhbGciOiJIUzI1NiIsInR5c...">
+
+        <label class="form-label-tech">Localhost API URL</label>
+        <input type="text" class="form-control-tech" id="localhost-input" placeholder="http://localhost:8000"
+            value="http://localhost:8000">
+
+        <button class="btn-tech" id="save-config"> Authenticate System</button>
+
+        <a href="index.html" class="back-link"><i class="bi bi-arrow-left me-2"></i>Return to Home</a>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+    <script>
+        // Config Handling
+        const saveConfig = document.getElementById('save-config');
+        const jwtInput = document.getElementById('jwt-token-input');
+        const localhostInput = document.getElementById('localhost-input');
+
+        // Load saved values
+        jwtInput.value = localStorage.getItem('jwt_token') || '';
+        localhostInput.value = localStorage.getItem('api_base_url') || 'http://localhost:8000';
+
+        // Save configuration
+        saveConfig.addEventListener('click', () => {
+            const jwtToken = jwtInput.value.trim();
+            const localhostUrl = localhostInput.value.trim();
+
+            if (jwtToken) {
+                localStorage.setItem('jwt_token', jwtToken);
+            }
+            if (localhostUrl) {
+                localStorage.setItem('api_base_url', localhostUrl);
+            }
+
+            // Show success animation/feedback
+            const originalText = saveConfig.textContent;
+            saveConfig.textContent = "SYSTEM CONNECTED";
+            saveConfig.style.background = "var(--c-cyan)";
+            saveConfig.style.color = "#000";
+
+            setTimeout(() => {
+                window.location.href = 'index.html';
+            }, 1000);
+        });
+
+        // --- THREE.JS ANIMATION (Tesseract) ---
+        const initThree = () => {
+            const container = document.getElementById('canvas-container');
+            const scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2(0x050505, 0.002);
+
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.z = 30;
+
+            const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            container.appendChild(renderer.domElement);
+
+            // TESSERACT: 4D Hypercube Nucleus
+            // Define 4D tesseract vertices (16 vertices of a hypercube)
+            const tesseractVertices4D = [
+                [-1, -1, -1, -1], [1, -1, -1, -1], [1, 1, -1, -1], [-1, 1, -1, -1],
+                [-1, -1, 1, -1], [1, -1, 1, -1], [1, 1, 1, -1], [-1, 1, 1, -1],
+                [-1, -1, -1, 1], [1, -1, -1, 1], [1, 1, -1, 1], [-1, 1, -1, 1],
+                [-1, -1, 1, 1], [1, -1, 1, 1], [1, 1, 1, 1], [-1, 1, 1, 1]
+            ];
+
+            // Define edges connecting vertices
+            const tesseractEdges = [
+                // Inner cube (w=-1)
+                [0, 1], [1, 2], [2, 3], [3, 0], [4, 5], [5, 6], [6, 7], [7, 4], [0, 4], [1, 5], [2, 6], [3, 7],
+                // Outer cube (w=1)
+                [8, 9], [9, 10], [10, 11], [11, 8], [12, 13], [13, 14], [14, 15], [15, 12], [8, 12], [9, 13], [10, 14], [11, 15],
+                // Connections between cubes
+                [0, 8], [1, 9], [2, 10], [3, 11], [4, 12], [5, 13], [6, 14], [7, 15]
+            ];
+
+            // Project 4D point to 3D
+            const project4Dto3D = (point4D, distance = 3) => {
+                const w = point4D[3];
+                const scale = distance / (distance - w);
+                return new THREE.Vector3(
+                    point4D[0] * scale * 5,
+                    point4D[1] * scale * 5,
+                    point4D[2] * scale * 5
+                );
+            };
+
+            // Rotate in 4D space
+            const rotate4D = (point, angleXY, angleXZ, angleXW, angleYZ, angleYW, angleZW) => {
+                let [x, y, z, w] = point;
+
+                // XY rotation
+                let newX = x * Math.cos(angleXY) - y * Math.sin(angleXY);
+                let newY = x * Math.sin(angleXY) + y * Math.cos(angleXY);
+                x = newX; y = newY;
+
+                // XZ rotation
+                newX = x * Math.cos(angleXZ) - z * Math.sin(angleXZ);
+                let newZ = x * Math.sin(angleXZ) + z * Math.cos(angleXZ);
+                x = newX; z = newZ;
+
+                // XW rotation
+                newX = x * Math.cos(angleXW) - w * Math.sin(angleXW);
+                let newW = x * Math.sin(angleXW) + w * Math.cos(angleXW);
+                x = newX; w = newW;
+
+                // YZ rotation
+                newY = y * Math.cos(angleYZ) - z * Math.sin(angleYZ);
+                newZ = y * Math.sin(angleYZ) + z * Math.cos(angleYZ);
+                y = newY; z = newZ;
+
+                // YW rotation
+                newY = y * Math.cos(angleYW) - w * Math.sin(angleYW);
+                newW = y * Math.sin(angleYW) + w * Math.cos(angleYW);
+                y = newY; w = newW;
+
+                // ZW rotation
+                newZ = z * Math.cos(angleZW) - w * Math.sin(angleZW);
+                newW = z * Math.sin(angleZW) + w * Math.cos(angleZW);
+                z = newZ; w = newW;
+
+                return [x, y, z, w];
+            };
+
+            // Create line geometry for tesseract
+            const tesseractGroup = new THREE.Group();
+            const tesseractLines = [];
+
+            tesseractEdges.forEach(edge => {
+                const geometry = new THREE.BufferGeometry();
+                const positions = new Float32Array(6); // 2 vertices * 3 coordinates
+                geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+                const material = new THREE.LineBasicMaterial({
+                    color: 0xAAAAAA, // Light Gray tesseract edges
+                    transparent: true,
+                    opacity: 0.4,
+                    linewidth: 1
+                });
+
+                const line = new THREE.Line(geometry, material);
+                tesseractGroup.add(line);
+                tesseractLines.push({ line, edge });
+            });
+
+            scene.add(tesseractGroup);
+
+            // Add Rainbow Gradient Nucleus (Cube)
+            const nucleusGeo = new THREE.BoxGeometry(1.5, 1.5, 1.5);
+
+            // Custom shader for rainbow gradient
+            const nucleusMat = new THREE.ShaderMaterial({
+                uniforms: {
+                    time: { value: 0 }
+                },
+                vertexShader: `
+                    varying vec2 vUv;
+                    varying vec3 vPosition;
+                    void main() {
+                        vUv = uv;
+                        vPosition = position;
+                        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                    }
+                `,
+                fragmentShader: `
+                    varying vec2 vUv;
+                    varying vec3 vPosition;
+                    uniform float time;
+
+                    void main() {
+                        // Create a rainbow gradient mixing Cyan, Magenta, Yellow
+                        vec3 color = vec3(0.0);
+                        
+                        // Cyan to Magenta horizontal gradient
+                        vec3 col1 = vec3(0.0, 1.0, 1.0); // Cyan
+                        vec3 col2 = vec3(1.0, 0.0, 1.0); // Magenta
+                        
+                        // Vertical mix with Yellow
+                        vec3 col3 = vec3(1.0, 1.0, 0.0); // Yellow
+
+                        float mixX = smoothstep(-0.75, 0.75, vPosition.x);
+                        float mixY = smoothstep(-0.75, 0.75, vPosition.y);
+                        
+                        vec3 horizMix = mix(col1, col2, mixX);
+                        color = mix(col3, horizMix, mixY);
+
+                        gl_FragColor = vec4(color, 0.9);
+                    }
+                `,
+                transparent: true,
+                blending: THREE.AdditiveBlending
+            });
+
+            const nucleus = new THREE.Mesh(nucleusGeo, nucleusMat);
+            scene.add(nucleus);
+
+            // Add point light for glow effect
+            const coreLight = new THREE.PointLight(0xFFFFFF, 2, 50);
+            coreLight.position.set(0, 0, 0);
+            scene.add(coreLight);
+
+            // Animation angles for 4D rotation
+            let angleXY = 0, angleXZ = 0, angleXW = 0;
+            let angleYZ = 0, angleYW = 0, angleZW = 0;
+
+            // ANIMATION LOOP
+            let mouseX = 0;
+            let mouseY = 0;
+
+            document.addEventListener('mousemove', (event) => {
+                mouseX = event.clientX / window.innerWidth - 0.5;
+                mouseY = event.clientY / window.innerHeight - 0.5;
+            });
+
+            const animate = () => {
+                requestAnimationFrame(animate);
+
+                // Mouse interaction with tesseract group
+                tesseractGroup.rotation.y = -mouseX * 0.2;
+                tesseractGroup.rotation.x = -mouseY * 0.2;
+
+                // Tesseract 4D Rotation Animation
+                angleXY += 0.005;
+                angleXZ += 0.003;
+                angleXW += 0.007;
+                angleYZ += 0.004;
+                angleYW += 0.006;
+                angleZW += 0.002;
+
+                // Update tesseract vertices and edges
+                tesseractLines.forEach(({ line, edge }) => {
+                    const [startIdx, endIdx] = edge;
+
+                    // Rotate vertices in 4D
+                    const rotatedStart = rotate4D(
+                        tesseractVertices4D[startIdx],
+                        angleXY, angleXZ, angleXW, angleYZ, angleYW, angleZW
+                    );
+                    const rotatedEnd = rotate4D(
+                        tesseractVertices4D[endIdx],
+                        angleXY, angleXZ, angleXW, angleYZ, angleYW, angleZW
+                    );
+
+                    // Project to 3D
+                    const start3D = project4Dto3D(rotatedStart);
+                    const end3D = project4Dto3D(rotatedEnd);
+
+                    // Update line positions
+                    const positions = line.geometry.attributes.position.array;
+                    positions[0] = start3D.x;
+                    positions[1] = start3D.y;
+                    positions[2] = start3D.z;
+                    positions[3] = end3D.x;
+                    positions[4] = end3D.y;
+                    positions[5] = end3D.z;
+
+                    line.geometry.attributes.position.needsUpdate = true;
+                });
+
+                // Rotate Nucleus Cube
+                if (nucleus) {
+                    nucleus.rotation.x += 0.01;
+                    nucleus.rotation.y += 0.015;
+                    nucleus.rotation.z += 0.005;
+                }
+
+                renderer.render(scene, camera);
+            };
+
+            animate();
+
+            // Resize Handler
+            window.addEventListener('resize', () => {
+                const width = window.innerWidth;
+                const height = window.innerHeight;
+                renderer.setSize(width, height);
+                camera.aspect = width / height;
+                camera.updateProjectionMatrix();
+            });
+        };
+
+        initThree();
+    </script>
+</body>
+
+</html>

@@ -573,56 +573,247 @@
     <script src="js/tools.js"></script>
 
     <script>
-        // --- THREE.JS QUANTUM FIELD (MAGENTA) ---
+        // --- THREE.JS QUANTUM FIELD (Tesseract) ---
         const initThreeBg = () => {
             const container = document.getElementById('canvas-bg');
             const scene = new THREE.Scene();
             scene.fog = new THREE.FogExp2(0x050505, 0.002);
-            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.z = 50;
 
-            const renderer = new THREE.WebGLRenderer({ alpha: true });
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.z = 30;
+
+            const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            // Clear previous canvas if any (though usually init runs once)
+            container.innerHTML = '';
             container.appendChild(renderer.domElement);
 
-            // Particles (Magenta Stars)
-            const particlesGeo = new THREE.BufferGeometry();
-            const particlesCount = 1500;
-            const posArray = new Float32Array(particlesCount * 3);
+            // TESSERACT: 4D Hypercube Nucleus
+            // Define 4D tesseract vertices (16 vertices of a hypercube)
+            const tesseractVertices4D = [
+                [-1, -1, -1, -1], [1, -1, -1, -1], [1, 1, -1, -1], [-1, 1, -1, -1],
+                [-1, -1, 1, -1], [1, -1, 1, -1], [1, 1, 1, -1], [-1, 1, 1, -1],
+                [-1, -1, -1, 1], [1, -1, -1, 1], [1, 1, -1, 1], [-1, 1, -1, 1],
+                [-1, -1, 1, 1], [1, -1, 1, 1], [1, 1, 1, 1], [-1, 1, 1, 1]
+            ];
 
-            for (let i = 0; i < particlesCount * 3; i++) {
-                posArray[i] = (Math.random() - 0.5) * 200;
-            }
-            particlesGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+            // Define edges connecting vertices
+            const tesseractEdges = [
+                // Inner cube (w=-1)
+                [0, 1], [1, 2], [2, 3], [3, 0], [4, 5], [5, 6], [6, 7], [7, 4], [0, 4], [1, 5], [2, 6], [3, 7],
+                // Outer cube (w=1)
+                [8, 9], [9, 10], [10, 11], [11, 8], [12, 13], [13, 14], [14, 15], [15, 12], [8, 12], [9, 13], [10, 14], [11, 15],
+                // Connections between cubes
+                [0, 8], [1, 9], [2, 10], [3, 11], [4, 12], [5, 13], [6, 14], [7, 15]
+            ];
 
-            const material = new THREE.PointsMaterial({
-                size: 0.4,
-                color: 0xFFFFFF,
-                transparent: true,
-                opacity: 0.3
+            // Project 4D point to 3D
+            const project4Dto3D = (point4D, distance = 3) => {
+                const w = point4D[3];
+                const scale = distance / (distance - w);
+                return new THREE.Vector3(
+                    point4D[0] * scale * 5,
+                    point4D[1] * scale * 5,
+                    point4D[2] * scale * 5
+                );
+            };
+
+            // Rotate in 4D space
+            const rotate4D = (point, angleXY, angleXZ, angleXW, angleYZ, angleYW, angleZW) => {
+                let [x, y, z, w] = point;
+
+                // XY rotation
+                let newX = x * Math.cos(angleXY) - y * Math.sin(angleXY);
+                let newY = x * Math.sin(angleXY) + y * Math.cos(angleXY);
+                x = newX; y = newY;
+
+                // XZ rotation
+                newX = x * Math.cos(angleXZ) - z * Math.sin(angleXZ);
+                let newZ = x * Math.sin(angleXZ) + z * Math.cos(angleXZ);
+                x = newX; z = newZ;
+
+                // XW rotation
+                newX = x * Math.cos(angleXW) - w * Math.sin(angleXW);
+                let newW = x * Math.sin(angleXW) + w * Math.cos(angleXW);
+                x = newX; w = newW;
+
+                // YZ rotation
+                newY = y * Math.cos(angleYZ) - z * Math.sin(angleYZ);
+                newZ = y * Math.sin(angleYZ) + z * Math.cos(angleYZ);
+                y = newY; z = newZ;
+
+                // YW rotation
+                newY = y * Math.cos(angleYW) - w * Math.sin(angleYW);
+                newW = y * Math.sin(angleYW) + w * Math.cos(angleYW);
+                y = newY; w = newW;
+
+                // ZW rotation
+                newZ = z * Math.cos(angleZW) - w * Math.sin(angleZW);
+                newW = z * Math.sin(angleZW) + w * Math.cos(angleZW);
+                z = newZ; w = newW;
+
+                return [x, y, z, w];
+            };
+
+            // Create line geometry for tesseract
+            const tesseractGroup = new THREE.Group();
+            const tesseractLines = [];
+
+            tesseractEdges.forEach(edge => {
+                const geometry = new THREE.BufferGeometry();
+                const positions = new Float32Array(6); // 2 vertices * 3 coordinates
+                geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+                const material = new THREE.LineBasicMaterial({
+                    color: 0xAAAAAA, // Light Gray
+                    transparent: true,
+                    opacity: 0.4,
+                    linewidth: 1
+                });
+
+                const line = new THREE.Line(geometry, material);
+                tesseractGroup.add(line);
+                tesseractLines.push({ line, edge });
             });
 
-            const particlesMesh = new THREE.Points(particlesGeo, material);
-            scene.add(particlesMesh);
+            scene.add(tesseractGroup);
+
+            // Add Rainbow Gradient Nucleus (Cube)
+            const nucleusGeo = new THREE.BoxGeometry(1.5, 1.5, 1.5);
+
+            // Custom shader for rainbow gradient
+            const nucleusMat = new THREE.ShaderMaterial({
+                uniforms: {
+                    time: { value: 0 }
+                },
+                vertexShader: `
+                    varying vec2 vUv;
+                    varying vec3 vPosition;
+                    void main() {
+                        vUv = uv;
+                        vPosition = position;
+                        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                    }
+                `,
+                fragmentShader: `
+                    varying vec2 vUv;
+                    varying vec3 vPosition;
+                    uniform float time;
+
+                    void main() {
+                        vec3 color = vec3(0.0);
+                        
+                        // Cyan to Magenta horizontal gradient
+                        vec3 col1 = vec3(0.0, 1.0, 1.0); 
+                        vec3 col2 = vec3(1.0, 0.0, 1.0); 
+                        
+                        // Vertical mix with Yellow
+                        vec3 col3 = vec3(1.0, 1.0, 0.0); 
+
+                        float mixX = smoothstep(-0.75, 0.75, vPosition.x);
+                        float mixY = smoothstep(-0.75, 0.75, vPosition.y);
+                        
+                        vec3 horizMix = mix(col1, col2, mixX);
+                        color = mix(col3, horizMix, mixY);
+
+                        gl_FragColor = vec4(color, 0.9);
+                    }
+                `,
+                transparent: true,
+                blending: THREE.AdditiveBlending
+            });
+
+            const nucleus = new THREE.Mesh(nucleusGeo, nucleusMat);
+            scene.add(nucleus);
+
+            // Add point light for glow effect
+            const coreLight = new THREE.PointLight(0xFFFFFF, 2, 50);
+            coreLight.position.set(0, 0, 0);
+            scene.add(coreLight);
+
+            // Animation angles
+            let angleXY = 0, angleXZ = 0, angleXW = 0;
+            let angleYZ = 0, angleYW = 0, angleZW = 0;
+
+            // ANIMATION LOOP
+            let mouseX = 0;
+            let mouseY = 0;
+
+            document.addEventListener('mousemove', (event) => {
+                mouseX = event.clientX / window.innerWidth - 0.5;
+                mouseY = event.clientY / window.innerHeight - 0.5;
+            });
 
             const animate = () => {
                 requestAnimationFrame(animate);
 
-                particlesMesh.rotation.y += 0.0003;
-                particlesMesh.rotation.x += 0.0001;
+                // Mouse interaction
+                tesseractGroup.rotation.y = -mouseX * 0.2;
+                tesseractGroup.rotation.x = -mouseY * 0.2;
+
+                // Tesseract 4D Rotation
+                angleXY += 0.005;
+                angleXZ += 0.003;
+                angleXW += 0.007;
+                angleYZ += 0.004;
+                angleYW += 0.006;
+                angleZW += 0.002;
+
+                // Update tesseract vertices and edges
+                tesseractLines.forEach(({ line, edge }) => {
+                    const [startIdx, endIdx] = edge;
+
+                    // Rotate vertices in 4D
+                    const rotatedStart = rotate4D(
+                        tesseractVertices4D[startIdx],
+                        angleXY, angleXZ, angleXW, angleYZ, angleYW, angleZW
+                    );
+                    const rotatedEnd = rotate4D(
+                        tesseractVertices4D[endIdx],
+                        angleXY, angleXZ, angleXW, angleYZ, angleYW, angleZW
+                    );
+
+                    // Project to 3D
+                    const start3D = project4Dto3D(rotatedStart);
+                    const end3D = project4Dto3D(rotatedEnd);
+
+                    // Update line positions
+                    const positions = line.geometry.attributes.position.array;
+                    positions[0] = start3D.x;
+                    positions[1] = start3D.y;
+                    positions[2] = start3D.z;
+                    positions[3] = end3D.x;
+                    positions[4] = end3D.y;
+                    positions[5] = end3D.z;
+
+                    line.geometry.attributes.position.needsUpdate = true;
+                });
+
+                // Rotate Nucleus Cube
+                if (nucleus) {
+                    nucleus.rotation.x += 0.01;
+                    nucleus.rotation.y += 0.015;
+                    nucleus.rotation.z += 0.005;
+                }
 
                 renderer.render(scene, camera);
             };
+
             animate();
 
-            // Resize
             window.addEventListener('resize', () => {
-                camera.aspect = window.innerWidth / window.innerHeight;
+                const width = window.innerWidth;
+                const height = window.innerHeight;
+                renderer.setSize(width, height);
+                camera.aspect = width / height;
                 camera.updateProjectionMatrix();
-                renderer.setSize(window.innerWidth, window.innerHeight);
             });
         };
-        initThreeBg();
+
+        window.onload = () => {
+            initThreeBg();
+        }
 
         // UI Logic Helper
         function closeToolDetails() {
