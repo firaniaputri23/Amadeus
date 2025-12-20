@@ -71,7 +71,7 @@ from microservice.agent_creator.routes.user_input_routes import router as agent_
 from microservice.agent_creator.routes.autofill import router as agent_creator_autofill_router
 
 # Import routes from chat_recommendation microservice
-from microservice.chat_recommendation.routes.chat_recommendation_routes import router as chat_recommendation_router
+# from microservice.chat_recommendation.routes.chat_recommendation_routes import router as chat_recommendation_router
 
 # Import routes from avatar_bucket microservice
 from microservice.avatar_bucket.routes.avatars import router as avatars_router
@@ -141,7 +141,7 @@ ROUTERS = [
     agent_field_autofill_router,
     agent_creator_user_input_router,
     agent_creator_autofill_router,
-    chat_recommendation_router,
+    # chat_recommendation_router,  # Disabled
     avatars_router,
     rag_router,
     sendgrid_webhook_router
@@ -375,9 +375,28 @@ def get_user_info(request: Request):
 async def list_models():
     """
     Get a list of all available language models.
-    Only returns the custom VLM model.
+    Returns local and cloud models with their capabilities.
     """
-    return {"available_models": ["custom-vlm"]}
+    # Read from config file
+    config_path = BASE_DIR / "config" / "openrouter_llm_list.json"
+    try:
+        with open(config_path, 'r', encoding='utf-8') as f:
+            import json
+            llm_config = json.load(f)
+            return llm_config
+    except Exception as e:
+        logger.error(f"Error reading LLM config: {e}")
+        # Fallback response
+        return {
+            "available_models": [
+                "custom-vlm",
+                "google/gemma-2-9b-it",
+                "google/gemma-2-27b-it",
+                "openai/gpt-4o-mini",
+                "gpt-3.5-turbo"
+            ],
+            "note": "Add OPENROUTER_API_KEY or OPENAI_API_KEY to .env to use cloud models"
+        }
 
 # Startup event: initialize roles and refresh tools
 @app.on_event("startup")

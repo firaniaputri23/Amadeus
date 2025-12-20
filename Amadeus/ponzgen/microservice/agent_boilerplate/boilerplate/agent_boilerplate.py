@@ -24,6 +24,7 @@ import uuid
 # Import from the current package
 from .models import AgentInput
 from .agent_templates.react_agent import get_react_agent
+from .agent_templates.react_text_agent import get_react_text_agent
 from langchain_mcp_adapters.client import MultiServerMCPClient
 from langgraph.checkpoint.memory import MemorySaver
 from langchain_core.messages import HumanMessage, AIMessageChunk, BaseMessage, AIMessage, ToolMessage
@@ -418,6 +419,9 @@ class AgentBoilerplate:
         agent = None
         client = None  # Placeholder for MCP client
         tool_messages = []  # To collect tool messages for logging
+        
+        # Determine if we should use ReAct text agent (for Gemma models)
+        use_react_text = "gemma" in model_name.lower()
 
         if has_tools:
             print("Using agent with tools")
@@ -425,7 +429,22 @@ class AgentBoilerplate:
             client = MultiServerMCPClient(mcp_config)
             await client.__aenter__()  # Manually entering async context
             langchain_tools = client.get_tools()
-            agent = get_react_agent(model_name=model_name, temperature=temperature, langchain_tools=langchain_tools, memory=memory)
+            
+            if use_react_text:
+                print(f"Using ReAct text-based agent for {model_name}")
+                agent = get_react_text_agent(
+                    model_name=model_name,
+                    temperature=temperature,
+                    langchain_tools=langchain_tools,
+                    memory=memory
+                )
+            else:
+                agent = get_react_agent(
+                    model_name=model_name,
+                    temperature=temperature,
+                    langchain_tools=langchain_tools,
+                    memory=memory
+                )
         else:
             print("Using agent without tools")
             agent = get_react_agent(model_name=model_name, temperature=temperature, langchain_tools=[], memory=memory)
