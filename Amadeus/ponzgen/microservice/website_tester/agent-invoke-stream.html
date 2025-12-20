@@ -409,7 +409,9 @@
             color: #ffffff !important;
             /* Force pure white for agent text */
             padding-left: 0;
-            font-weight: 400;
+            font-weight: 500;
+            text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+            /* Add shadow for better contrast */
         }
 
         /* Ensure all nested markdown elements are light */
@@ -417,7 +419,20 @@
         .agent .message-content p,
         .agent .message-content li,
         .agent .message-content strong,
-        .agent .message-content span {
+        .agent .message-content span,
+        .agent .message-content div,
+        .agent .message-content h1,
+        .agent .message-content h2,
+        .agent .message-content h3,
+        .agent .message-content h4,
+        .agent .message-content h5,
+        .agent .message-content h6,
+        .agent .message-content i,
+        .agent .message-content b,
+        .agent .message-content em,
+        .agent .token-container,
+        .token-container,
+        .token-container * {
             color: #ffffff !important;
         }
 
@@ -427,7 +442,7 @@
         }
 
         .agent .message-content a {
-            color: #ffffff !important;
+            color: #4da3ff !important;
             text-decoration: underline;
             opacity: 0.9;
         }
@@ -556,7 +571,7 @@
                 <div class="mb-4">
                     <label class="form-label">Prompt Injection</label>
                     <textarea class="form-control" id="agent-context" rows="3"
-                        placeholder="Injected directives..."></textarea>
+                        placeholder="Enter your system prompt"></textarea>
                 </div>
 
                 <!-- Agent Style -->
@@ -664,67 +679,233 @@
     <script src="js/agent-invoke-stream.js"></script>
 
     <script>
-        // Updated Monochrome Three.js Background
+        // --- THREE.JS QUANTUM FIELD (Tesseract) ---
         const initThreeBg = () => {
             const container = document.getElementById('canvas-bg');
             const scene = new THREE.Scene();
-            scene.fog = new THREE.FogExp2(0x0a0a0a, 0.04);
+            scene.fog = new THREE.FogExp2(0x050505, 0.002);
+
             const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.z = 100;
+            camera.position.z = 30;
 
             const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            // Clear previous canvas if any
+            container.innerHTML = '';
             container.appendChild(renderer.domElement);
 
-            // Binary Particles (White/Gray)
-            const createCharTexture = (char) => {
-                const canvas = document.createElement('canvas');
-                canvas.width = 64;
-                canvas.height = 64;
-                const ctx = canvas.getContext('2d');
-                ctx.font = 'bold 48px Inter';
-                ctx.fillStyle = '#ffffff';
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillText(char, 32, 32);
-                return new THREE.CanvasTexture(canvas);
+            // TESSERACT: 4D Hypercube Nucleus
+            // Define 4D tesseract vertices (16 vertices of a hypercube)
+            const tesseractVertices4D = [
+                [-1, -1, -1, -1], [1, -1, -1, -1], [1, 1, -1, -1], [-1, 1, -1, -1],
+                [-1, -1, 1, -1], [1, -1, 1, -1], [1, 1, 1, -1], [-1, 1, 1, -1],
+                [-1, -1, -1, 1], [1, -1, -1, 1], [1, 1, -1, 1], [-1, 1, -1, 1],
+                [-1, -1, 1, 1], [1, -1, 1, 1], [1, 1, 1, 1], [-1, 1, 1, 1]
+            ];
+
+            // Define edges connecting vertices
+            const tesseractEdges = [
+                // Inner cube (w=-1)
+                [0, 1], [1, 2], [2, 3], [3, 0], [4, 5], [5, 6], [6, 7], [7, 4], [0, 4], [1, 5], [2, 6], [3, 7],
+                // Outer cube (w=1)
+                [8, 9], [9, 10], [10, 11], [11, 8], [12, 13], [13, 14], [14, 15], [15, 12], [8, 12], [9, 13], [10, 14], [11, 15],
+                // Connections between cubes
+                [0, 8], [1, 9], [2, 10], [3, 11], [4, 12], [5, 13], [6, 14], [7, 15]
+            ];
+
+            // Project 4D point to 3D
+            const project4Dto3D = (point4D, distance = 3) => {
+                const w = point4D[3];
+                const scale = distance / (distance - w);
+                return new THREE.Vector3(
+                    point4D[0] * scale * 5,
+                    point4D[1] * scale * 5,
+                    point4D[2] * scale * 5
+                );
             };
 
-            const texture0 = createCharTexture('0');
-            const texture1 = createCharTexture('1');
+            // Rotate in 4D space
+            const rotate4D = (point, angleXY, angleXZ, angleXW, angleYZ, angleYW, angleZW) => {
+                let [x, y, z, w] = point;
 
-            const particleCount = 800;
-            const particlesData = [];
+                // XY rotation
+                let newX = x * Math.cos(angleXY) - y * Math.sin(angleXY);
+                let newY = x * Math.sin(angleXY) + y * Math.cos(angleXY);
+                x = newX; y = newY;
 
-            for (let i = 0; i < particleCount; i++) {
-                const material = new THREE.SpriteMaterial({
-                    map: Math.random() > 0.5 ? texture1 : texture0,
-                    color: 0xffffff,
+                // XZ rotation
+                newX = x * Math.cos(angleXZ) - z * Math.sin(angleXZ);
+                let newZ = x * Math.sin(angleXZ) + z * Math.cos(angleXZ);
+                x = newX; z = newZ;
+
+                // XW rotation
+                newX = x * Math.cos(angleXW) - w * Math.sin(angleXW);
+                let newW = x * Math.sin(angleXW) + w * Math.cos(angleXW);
+                x = newX; w = newW;
+
+                // YZ rotation
+                newY = y * Math.cos(angleYZ) - z * Math.sin(angleYZ);
+                newZ = y * Math.sin(angleYZ) + z * Math.cos(angleYZ);
+                y = newY; z = newZ;
+
+                // YW rotation
+                newY = y * Math.cos(angleYW) - w * Math.sin(angleYW);
+                newW = y * Math.sin(angleYW) + w * Math.cos(angleYW);
+                y = newY; w = newW;
+
+                // ZW rotation
+                newZ = z * Math.cos(angleZW) - w * Math.sin(angleZW);
+                newW = z * Math.sin(angleZW) + w * Math.cos(angleZW);
+                z = newZ; w = newW;
+
+                return [x, y, z, w];
+            };
+
+            // Create line geometry for tesseract
+            const tesseractGroup = new THREE.Group();
+            const tesseractLines = [];
+
+            tesseractEdges.forEach(edge => {
+                const geometry = new THREE.BufferGeometry();
+                const positions = new Float32Array(6); // 2 vertices * 3 coordinates
+                geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+                const material = new THREE.LineBasicMaterial({
+                    color: 0xAAAAAA, // Light Gray
                     transparent: true,
-                    opacity: Math.random() * 0.3 + 0.05,
+                    opacity: 0.4,
+                    linewidth: 1
                 });
 
-                const sprite = new THREE.Sprite(material);
-                sprite.position.x = (Math.random() - 0.5) * 500;
-                sprite.position.y = (Math.random() - 0.5) * 500;
-                sprite.position.z = (Math.random() - 0.5) * 300;
-                const scale = Math.random() * 1.5 + 0.5;
-                sprite.scale.set(scale, scale, 1);
-                scene.add(sprite);
-                particlesData.push({ sprite, speed: Math.random() * 0.3 + 0.1 });
-            }
+                const line = new THREE.Line(geometry, material);
+                tesseractGroup.add(line);
+                tesseractLines.push({ line, edge });
+            });
+
+            scene.add(tesseractGroup);
+
+            // Add Rainbow Gradient Nucleus (Cube)
+            const nucleusGeo = new THREE.BoxGeometry(1.5, 1.5, 1.5);
+
+            // Custom shader for rainbow gradient
+            const nucleusMat = new THREE.ShaderMaterial({
+                uniforms: {
+                    time: { value: 0 }
+                },
+                vertexShader: `
+                    varying vec2 vUv;
+                    varying vec3 vPosition;
+                    void main() {
+                        vUv = uv;
+                        vPosition = position;
+                        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                    }
+                `,
+                fragmentShader: `
+                    varying vec2 vUv;
+                    varying vec3 vPosition;
+                    uniform float time;
+
+                    void main() {
+                        vec3 color = vec3(0.0);
+                        
+                        // Cyan to Magenta horizontal gradient
+                        vec3 col1 = vec3(0.0, 1.0, 1.0); 
+                        vec3 col2 = vec3(1.0, 0.0, 1.0); 
+                        
+                        // Vertical mix with Yellow
+                        vec3 col3 = vec3(1.0, 1.0, 0.0); 
+
+                        float mixX = smoothstep(-0.75, 0.75, vPosition.x);
+                        float mixY = smoothstep(-0.75, 0.75, vPosition.y);
+                        
+                        vec3 horizMix = mix(col1, col2, mixX);
+                        color = mix(col3, horizMix, mixY);
+
+                        gl_FragColor = vec4(color, 0.9);
+                    }
+                `,
+                transparent: true,
+                blending: THREE.AdditiveBlending
+            });
+
+            const nucleus = new THREE.Mesh(nucleusGeo, nucleusMat);
+            scene.add(nucleus);
+
+            // Add point light for glow effect
+            const coreLight = new THREE.PointLight(0xFFFFFF, 2, 50);
+            coreLight.position.set(0, 0, 0);
+            scene.add(coreLight);
+
+            // Animation angles
+            let angleXY = 0, angleXZ = 0, angleXW = 0;
+            let angleYZ = 0, angleYW = 0, angleZW = 0;
+
+            // ANIMATION LOOP
+            let mouseX = 0;
+            let mouseY = 0;
+
+            document.addEventListener('mousemove', (event) => {
+                mouseX = event.clientX / window.innerWidth - 0.5;
+                mouseY = event.clientY / window.innerHeight - 0.5;
+            });
 
             const animate = () => {
                 requestAnimationFrame(animate);
-                particlesData.forEach(data => {
-                    data.sprite.position.y -= data.speed;
-                    if (data.sprite.position.y < -250) {
-                        data.sprite.position.y = 250;
-                        data.sprite.position.x = (Math.random() - 0.5) * 500;
-                    }
+
+                // Mouse interaction
+                tesseractGroup.rotation.y = -mouseX * 0.2;
+                tesseractGroup.rotation.x = -mouseY * 0.2;
+
+                // Tesseract 4D Rotation
+                angleXY += 0.005;
+                angleXZ += 0.003;
+                angleXW += 0.007;
+                angleYZ += 0.004;
+                angleYW += 0.006;
+                angleZW += 0.002;
+
+                // Update tesseract vertices and edges
+                tesseractLines.forEach(({ line, edge }) => {
+                    const [startIdx, endIdx] = edge;
+
+                    // Rotate vertices in 4D
+                    const rotatedStart = rotate4D(
+                        tesseractVertices4D[startIdx],
+                        angleXY, angleXZ, angleXW, angleYZ, angleYW, angleZW
+                    );
+                    const rotatedEnd = rotate4D(
+                        tesseractVertices4D[endIdx],
+                        angleXY, angleXZ, angleXW, angleYZ, angleYW, angleZW
+                    );
+
+                    // Project to 3D
+                    const start3D = project4Dto3D(rotatedStart);
+                    const end3D = project4Dto3D(rotatedEnd);
+
+                    // Update line positions
+                    const positions = line.geometry.attributes.position.array;
+                    positions[0] = start3D.x;
+                    positions[1] = start3D.y;
+                    positions[2] = start3D.z;
+                    positions[3] = end3D.x;
+                    positions[4] = end3D.y;
+                    positions[5] = end3D.z;
+
+                    line.geometry.attributes.position.needsUpdate = true;
                 });
+
+                // Rotate Nucleus Cube
+                if (nucleus) {
+                    nucleus.rotation.x += 0.01;
+                    nucleus.rotation.y += 0.015;
+                    nucleus.rotation.z += 0.005;
+                }
+
                 renderer.render(scene, camera);
             };
+
             animate();
 
             window.addEventListener('resize', () => {

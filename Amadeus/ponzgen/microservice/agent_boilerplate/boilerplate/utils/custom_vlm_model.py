@@ -19,6 +19,7 @@ from transformers import (
     AutoTokenizer,
     CLIPVisionModel,
     AutoProcessor,
+    BitsAndBytesConfig,
 )
 from langchain_core.language_models import LLM
 from langchain_core.callbacks.manager import CallbackManagerForLLMRun
@@ -32,8 +33,14 @@ curr_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.abspath(os.path.join(curr_dir, "../../../../../"))
 BASE_DIR = os.path.join(project_root, "models")
 MODEL_PATH = os.path.join(BASE_DIR, "BLEU11.pt")
+os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+if DEVICE == "cuda":
+    print(f"✅ CUDA Detected: {torch.cuda.get_device_name(0)}")
+else:
+    print("⚠️ CUDA NOT Detected. Running on CPU.")
+
 CLIP_MODEL_ID = "openai/clip-vit-base-patch32"
 GEMMA_MODEL_ID = "google/gemma-2-2b-it"
 NUM_VIS_TOKEN = 50
@@ -67,11 +74,21 @@ class MyModel(nn.Module):
     
     def __init__(self):
         super(MyModel, self).__init__()
+        
+        # Configure Quantization for 4-bit loading (Fixes OOM on 8GB cards)
+        quantization_config = None
+        if DEVICE == "cuda":
+            quantization_config = BitsAndBytesConfig(
+                load_in_4bit=True,
+                bnb_4bit_compute_dtype=torch.bfloat16
+            )
+
         # Initialize Gemma-2
         self.model_language = AutoModelForCausalLM.from_pretrained(
             GEMMA_MODEL_ID,
             torch_dtype=torch.bfloat16,
-            device_map="auto" if DEVICE == "cuda" else None
+            device_map="auto" if DEVICE == "cuda" else None,
+            quantization_config=quantization_config
         )
         self.tokenizer_language = AutoTokenizer.from_pretrained(GEMMA_MODEL_ID, padding_side='right')
         
