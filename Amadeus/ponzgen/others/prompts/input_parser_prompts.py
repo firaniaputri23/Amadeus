@@ -89,52 +89,61 @@ def create_multi_agent_parsing_prompt(user_input: str) -> str:
     """
     return f"""
     ### Task ###
-    Analyze the user input to determine if they are describing multiple agents and if so, extract information about each agent.
+    Analyze the user input to detect multiple agents. Your goal is to ALWAYS generate valid, complete agent definitions, even if the input is minimal. 
+    You must INFER and GENERATE missing details based on the roles described.
     
     ### User Input ###
     {user_input}
     
     ### Instructions ###
-    1. Identify how many distinct agents are being described.
-    2. Extract common attributes that apply to all agents (if any).
-    3. Extract specific differences between agents.
-    4. Return your analysis as a JSON object with the following structure:
+    1. Identify distinct agents. If the user says "frontend backend devops", you detect 3 agents.
+    2. INFER the following fields for EACH agent based on their implied role:
+       - agent_name: A creative, professional name (e.g., "Frontend" -> "PixelArchitect", "UI/UX Specialist").
+       - description: A detailed professional summary of their responsibilities.
+       - agent_style: A persona definition (e.g., "I am a meticulous DevOps engineer...").
+       - tools: A list of likely tools they would use (e.g., Frontend -> ["React", "HTML", "CSS"], DevOps -> ["Docker", "Kubernetes"]).
+       - experience: Estimated years of experience (e.g., "Senior", "5 years").
+       - industry: The likely industry (e.g., "Software Development", "E-commerce").
+       - target_audience: Who they serve (e.g., "End Users", "Development Team").
+       - specialization: Core focus (e.g., "Responsive Design", "CI/CD Pipelines").
+       - response_length: "concise" or "detailed".
+       - formality_level: "professional" or "casual".
+       - on_status: true.
+       - company_id: "".
+    
+    3. Return your analysis as a JSON object with the following structure:
     
     ```json
     {{
         "agent_count": <number of agents detected>,
         "common_attributes": {{
-            "agent_name": "<common name pattern if applicable>",
-            "description": "<common description if applicable>",
-            "other_common_field": "<value>"
-            ...
+            "industry": "<inferred common industry>",
+            "company_id": ""
         }},
         "agent_variations": [
             {{
-                "agent_name": "<name of agent 1>",
-                "description": "<specific description for agent 1>",
-                "specific_field_1": "<value specific to agent 1>"
-            }},
-            {{
-                "agent_name": "<name of agent 2>",
-                "description": "<specific description for agent 2>",
-                "specific_field_2": "<value specific to agent 2>"
+                "agent_name": "<inferred name>",
+                "description": "<inferred description>",
+                "agent_style": "<inferred style>",
+                "tools": ["<inferred tool 1>", "<inferred tool 2>"],
+                "experience": "<inferred experience>",
+                "target_audience": "<inferred audience>",
+                "specialization": "<inferred specialization>",
+                "response_length": "detailed",
+                "formality_level": "professional",
+                "on_status": true
             }},
             ...
         ],
-        "need_more_info": true/false,
-        "missing_info": "<description of what information is missing>"
+        "need_more_info": false,
+        "missing_info": ""
     }}
     ```
     
-    5. Set need_more_info to true if you cannot determine the number of agents or clear differences between them.
-    6. Be precise about differentiating factors between agents.
-    7. Make sure every agent variation has at minimum these fields:
-       - agent_name (a unique name for each agent)
-       - description (a specific description for each agent)
-    8. Don't use "agent_style" - use "agent_name" instead for naming fields consistently.
-    9. All agents must have the same field structure (include the same fields even if empty).
+    4. CRITICAL: Set `need_more_info` to `true` ONLY if the input is completely nonsensical. If you can guess the roles, SET IT TO `false` and FILL IN THE BLANKS.
+    5. Be creative! If the user says "startup team", invent a CEO, CTO, and Product Manager.
+    6. Ensure `tools` is always a list of strings.
     
     ### Response Format ###
     Only return the JSON object. Do not wrap it in markdown code blocks. Do not add any conversational text.
-    """ 
+    """

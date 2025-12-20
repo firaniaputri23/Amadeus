@@ -154,26 +154,21 @@ async function getAgentDetails(agentId) {
 
         // Display agent details
         let infoHtml = `
-            <div class="alert alert-info">
-                <h5>${agentDetails.agent_name}</h5>
-                <p>${agentDetails.description || 'No description'}</p>
-                <p><strong>Style:</strong> ${agentDetails.agent_style || 'Default'}</p>
-                <p><strong>Status:</strong> 
-                    <span class="badge ${agentDetails.on_status ? 'bg-success' : 'bg-danger'}">
-                        ${agentDetails.on_status ? 'Active' : 'Inactive'}
+            <div class="agent-summary-card">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <h6 class="text-white mb-0" style="letter-spacing: 0.5px;">${agentDetails.agent_name}</h6>
+                    <span class="badge bg-transparent border ${agentDetails.on_status ? 'border-success text-success' : 'border-secondary text-secondary'} " style="font-size: 0.6rem;">
+                        ${agentDetails.on_status ? 'ACTIVE' : 'INACTIVE'}
                     </span>
-                </p>
-            <div class="card bg-transparent border-secondary text-white">
-                <div class="card-body">
-                    <h5 class="card-title">${agentDetails.agent_name}</h5>
-                    <p class="card-text">${agentDetails.description || 'No description'}</p>
-                    <p class="card-text"><strong>Style:</strong> ${agentDetails.agent_style || 'Default'}</p>
-                    <p class="card-text"><strong>Status:</strong> 
-                        <span class="badge bg-transparent border ${agentDetails.on_status ? 'border-white text-white' : 'border-secondary text-secondary'} rounded-0">
-                            ${agentDetails.on_status ? 'ACTIVE' : 'INACTIVE'}
-                        </span>
-                    </p>
-                    <p class="card-text"><strong>Tools:</strong> ${agentDetails.tools ? agentDetails.tools.length : 0} tools available</p>
+                </div>
+                <p class="small text-white opacity-75 mb-3" style="font-size: 0.8rem; line-height: 1.5; font-weight: 400;">${agentDetails.description || 'No description'}</p>
+                <div class="d-flex flex-wrap gap-2 mb-3">
+                    <div class="bg-dark border border-secondary px-2 py-1 rounded small text-white opacity-50" style="font-size: 0.65rem; font-weight: 600;">
+                        STYLE: ${agentDetails.agent_style || 'DEFAULT'}
+                    </div>
+                    <div class="bg-dark border border-secondary px-2 py-1 rounded small text-white opacity-50" style="font-size: 0.65rem; font-weight: 600;">
+                        TOOLS: ${agentDetails.tools ? agentDetails.tools.length : 0}
+                    </div>
                 </div>
             </div>
         `;
@@ -508,7 +503,7 @@ function addMessageToChat(role, content, type = 'normal', imageData = null, cust
         messageElement.innerHTML = content;
     } else {
         // User or agent messages - NEATER BUBBLE STYLE
-        messageElement.className = `message-bubble ${role} mb-3`;
+        messageElement.className = `message-bubble ${role} chat-boundary mb-3`;
 
         // Create message content container
         const messageContent = document.createElement('div');

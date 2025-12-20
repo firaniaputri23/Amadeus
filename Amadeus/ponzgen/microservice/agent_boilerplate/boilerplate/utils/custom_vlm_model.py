@@ -70,7 +70,7 @@ class MyModel(nn.Module):
         # Initialize Gemma-2
         self.model_language = AutoModelForCausalLM.from_pretrained(
             GEMMA_MODEL_ID,
-            dtype=torch.bfloat16,
+            torch_dtype=torch.bfloat16,
             device_map="auto" if DEVICE == "cuda" else None
         )
         self.tokenizer_language = AutoTokenizer.from_pretrained(GEMMA_MODEL_ID, padding_side='right')
@@ -123,7 +123,7 @@ class MyModel(nn.Module):
         replaced_embed = torch.cat((start_embed, replacement_embed.to(now_input_tokens.dtype), end_embed), 0)
         return replaced_embed
 
-    def generate_answer_text(self, text_input: str, max_new_tokens=256):
+    def generate_answer_text(self, text_input: str, max_new_tokens=256, temperature=None):
         """Generate answer for text-only input."""
 
         # 1. Basic format check for Gemma
@@ -132,18 +132,21 @@ class MyModel(nn.Module):
         else:
              instruction_now = text_input
 
+        # Default temperature if not provided
+        if temperature is None:
+            temperature = 0.7
+
         try:
             # 2. Tokenize
             inputs = self.tokenizer_language(instruction_now, return_tensors="pt")
             inputs = {k: v.to(self.model_language.device) for k, v in inputs.items()}
             
             # 3. Generate
-            # 3. Generate
             outputs = self.model_language.generate(
                 **inputs,
                 max_new_tokens=max_new_tokens,
-                do_sample=True, 
-                temperature=0.7,
+                do_sample=temperature > 0, 
+                temperature=max(temperature, 0.01) if temperature > 0 else None,
                 repetition_penalty=1.2,
                 no_repeat_ngram_size=3,
                 pad_token_id=self.tokenizer_language.eos_token_id
@@ -240,6 +243,7 @@ class CustomVLMLLM(LLM):
     model: MyModel = None
     device: str = DEVICE
     model_path: str = MODEL_PATH
+    temperature: float = 0.7
 
     @property
     def _llm_type(self) -> str:
@@ -294,7 +298,8 @@ class CustomVLMLLM(LLM):
             print("DEBUG: Model is None, calling _load_model")
             self._load_model()
             
-        response = self.model.generate_answer_text(prompt)
+        # Use the stored temperature
+        response = self.model.generate_answer_text(prompt, temperature=self.temperature)
         
         # CRITICAL FIX: Emit the token callback so the frontend receives the data
         if run_manager:
@@ -323,7 +328,7 @@ class CustomVLMLLM(LLM):
         loop = asyncio.get_running_loop()
         response = await loop.run_in_executor(
             None, 
-            functools.partial(self.model.generate_answer_text, prompt)
+            functools.partial(self.model.generate_answer_text, prompt, temperature=self.temperature)
         )
         
         # Emit the token callback asynchronously

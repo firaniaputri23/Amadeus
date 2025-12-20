@@ -108,24 +108,37 @@ class InputParser:
         # Replace smart double quotes with standard double quote
         content = content.replace('“', '"').replace('”', '"')
         
-        # Replace smart single quotes with STANDARD DOUBLE QUOTE
+        # Replace smart single and double quotes
         content = content.replace("‘", '"').replace("’", '"')
+        content = content.replace("“", '"').replace("”", '"')
         
         # Replace common JSON-breaking characters
         content = content.replace('\xa0', ' ') # Non-breaking space
+
+        # Remove markdown escaping for underscores (e.g., agent\_count -> agent_count)
+        content = content.replace(r'\_', '_')
         
-        # Handle cases where keys are single-quoted or unquoted (common in lazy LLM outputs)
-        # 1. Single-quoted keys: 'key': -> "key":
-        content = re.sub(r"'(\w+)':", r'"\1":', content)
-        # 2. Unquoted keys: { key: -> { "key": 
-        content = re.sub(r"([{,]\s*)(\w+):", r'\1"\2":', content)
-        # 3. Double-quoted values that use single quotes internally (already fine, but let's be careful)
+        # Handle cases where the LLM outputs Python-style dicts with single quotes
+        # 1. Replace single-quoted keys: 'key': -> "key":
+        content = re.sub(r"'([\w@\s]+)':", r'"\1":', content)
+        
+        # 2. Replace single-quoted string values: : 'value' -> : "value"
+        # Be careful not to replace apostrophes inside words (like user's)
+        # We look for: : \s* ' (content) ' 
+        # But parsing arbitrary strings with regex is hard, so we do a simpler heuristic for common simple values
+        # We look for : '...' but avoiding internal quotes if possible, or just blind replace if simple
+        
+        # A more robust approach for values: Look for : '...' followed by comma or brace
+        content = re.sub(r":\s*'([^']*)'(?=\s*[,}\]])", r': "\1"', content)
+        
+        # 3. Also handle empty single quoted strings: : '' -> : ""
+        content = content.replace(": ''", ': ""')
+
+        # 4. Unquoted keys: { key: -> { "key": 
+        content = re.sub(r"([{,]\s*)([\w@]+):", r'\1"\2":', content)
         
         # Remove trailing commas (e.g. "key": "val", } -> "key": "val" })
         content = re.sub(r',\s*([}\]])', r'\1', content)
-        
-        # Remove markdown escaping for underscores
-        content = content.replace(r'\_', '_')
         
         return content
 
@@ -147,7 +160,13 @@ class InputParser:
         try:
             return json.loads(response_content)
         except json.JSONDecodeError:
-            pass
+            # Try to repair truncated JSON
+            repaired = InputParser._repair_truncated_json(response_content)
+            try:
+                if repaired != response_content:
+                    return json.loads(repaired)
+            except json.JSONDecodeError:
+                pass
             
         # Try extracting JSON from code block
         result = InputParser._parse_json_structure(response_content, r'```(?:json)?\s*(.*?)\s*```')
@@ -164,18 +183,57 @@ class InputParser:
             # Look for everything between the first '{' and the last '}'
             start_idx = response_content.find('{')
             end_idx = response_content.rfind('}')
-            if start_idx != -1 and end_idx != -1 and end_idx > start_idx:
-                json_str = response_content[start_idx:end_idx+1]
+            
+            if start_idx != -1:
+                # If we have a closing brace, use that range
+                if end_idx != -1 and end_idx > start_idx:
+                    json_str = response_content[start_idx:end_idx+1]
+                else:
+                    # If no closing brace, take everything from the start and try to repair it
+                    json_str = response_content[start_idx:]
+                
                 # A final attempt to fix single quotes in the extracted block
-                # but ONLY if double quotes aren't being used for keys
                 if '"' not in json_str or (json_str.find("'") < json_str.find('"') and "'" in json_str):
                     json_str = json_str.replace("'", '"')
-                return json.loads(json_str)
+                    
+                try:
+                    return json.loads(json_str)
+                except json.JSONDecodeError:
+                    # Final attempt: repair the extracted block if it's truncated
+                    repaired_block = InputParser._repair_truncated_json(json_str)
+                    try:
+                        return json.loads(repaired_block)
+                    except json.JSONDecodeError:
+                        pass
         except (json.JSONDecodeError, ValueError):
             pass
 
         # Return empty dict if all extraction attempts failed
         return {}
+
+    @staticmethod
+    def _repair_truncated_json(json_str: str) -> str:
+        """Attempt to repair truncated JSON by closing open braces and brackets."""
+        json_str = json_str.strip()
+        if not json_str:
+            return ""
+            
+        # Balance braces and brackets
+        braces = json_str.count('{') - json_str.count('}')
+        brackets = json_str.count('[') - json_str.count(']')
+        
+        # Remove trailing colon or comma which might prevent parsing even after closing
+        json_str = re.sub(r'[:,\s]+$', '', json_str)
+        
+        # If inside a string value that isn't closed
+        if json_str.count('"') % 2 != 0:
+            json_str += '"'
+            
+        # Close open structures
+        json_str += ']' * max(0, brackets)
+        json_str += '}' * max(0, braces)
+        
+        return json_str
     
     @staticmethod
     def _parse_list_from_response(response_content: str) -> List[str]:
@@ -532,6 +590,15 @@ async def parse_multi_agent_input(
                 
             if "description" not in agent:
                 agent["description"] = "No specific description provided"
+
+        # FORCE need_more_info to False if we have any agents
+        # This overrides LLM hesitation - we prefer to show Draft agents than block the user
+        if len(result["agent_variations"]) > 0 or result.get("agent_count", 0) > 0:
+            result["need_more_info"] = False
+            result["missing_info"] = ""
+            result["has_multi_agent"] = True
+        
+        return result
         
         return result
             

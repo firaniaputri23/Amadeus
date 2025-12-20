@@ -104,7 +104,7 @@
             flex: 1;
             display: flex;
             flex-direction: column;
-            background: rgba(255, 255, 255, 0.02);
+            background: rgba(0, 0, 0, 0.5);
             position: relative;
         }
 
@@ -507,7 +507,7 @@
         <aside class="sidebar">
             <a href="index.html" class="brand">
                 <div class="brand-logo">A</div>
-                <span class="brand-text">Architect</span>
+                <span class="brand-text">Agent Studio</span>
             </a>
 
             <div class="nav flex-column gap-2 mb-4">
@@ -518,7 +518,7 @@
                     <i class="bi bi-tools me-2"></i> Tool Library
                 </a>
                 <a href="agent-invoke-stream.html" class="btn btn-outline-quantum text-start py-2">
-                    <i class="bi bi-broadcast me-2"></i> Live Stream
+                    <i class="bi bi-broadcast me-2"></i> Agent Invocation
                 </a>
             </div>
 
@@ -540,8 +540,7 @@
         <main class="chat-section">
             <header class="chat-header">
                 <div class="d-flex flex-column">
-                    <h5>Conversational Agent Builder</h5>
-                    <span class="text-xs text-secondary opacity-50">Drafting next-gen digital entities</span>
+                    <h5>Create your Agent in Single Prompt</h5>
                 </div>
 
                 <div class="d-flex align-items-center gap-3">
@@ -617,6 +616,8 @@
                     <i class="bi bi-magic display-3 d-block mb-3 text-yellow"></i>
                     <p class="small text-secondary text-uppercase" style="letter-spacing: 2px;">Awaiting Extraction</p>
                 </div>
+                <!-- Hidden placeholder for MCPHub tools before preview loads -->
+                <div id="mcphub-tools-container" style="display: none;"></div>
             </div>
 
             <!-- Footer Actions -->
@@ -683,9 +684,9 @@
 
             const material = new THREE.PointsMaterial({
                 size: 0.4,
-                color: 0xFFFF00,
+                color: 0x000000,
                 transparent: true,
-                opacity: 0.4
+                opacity: 0.3
             });
 
             const particlesMesh = new THREE.Points(particlesGeo, material);

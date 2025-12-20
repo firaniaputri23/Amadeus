@@ -4,11 +4,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ponzgen Tool Registry</title>
+    <title>Ponzgen Tools Registry</title>
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
     <!-- CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
@@ -83,20 +85,31 @@
         }
 
         .brand {
-            font-size: 1.25rem;
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.1rem;
             font-weight: 700;
-            letter-spacing: 2px;
-            margin-bottom: 2rem;
+            letter-spacing: 1px;
+            margin-bottom: 2.5rem;
             color: var(--text-primary);
             text-decoration: none;
             display: flex;
             align-items: center;
+            text-transform: uppercase;
         }
 
         .brand i {
-            color: var(--q-magenta);
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, var(--q-magenta), #ac00ac);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
             margin-right: 0.75rem;
-            text-shadow: 0 0 10px var(--q-magenta);
+            font-size: 1rem;
+            box-shadow: 0 0 15px rgba(255, 0, 255, 0.4);
+            font-style: normal;
         }
 
         .nav-btn {
@@ -104,9 +117,9 @@
             border: 1px solid var(--border-color);
             color: var(--text-secondary);
             text-align: left;
-            padding: 0.75rem 1rem;
-            margin-bottom: 0.5rem;
-            border-radius: 4px;
+            padding: 0.75rem 1.25rem;
+            margin-bottom: 0.75rem;
+            border-radius: 12px;
             transition: all 0.3s;
             text-transform: uppercase;
             font-size: 0.8rem;
@@ -162,14 +175,13 @@
         }
 
         h1.page-title {
-            font-size: 2rem;
-            font-weight: 300;
+            font-family: 'Outfit', sans-serif;
+            font-size: 2.2rem;
+            font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 2px;
+            letter-spacing: 1px;
             margin: 0;
-            background: linear-gradient(90deg, #fff, var(--text-secondary));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            color: #fff;
         }
 
         /* ACTIONS */
@@ -180,17 +192,19 @@
         }
 
         .btn-quantum {
-            background: rgba(0, 0, 0, 0.5);
-            border: 1px solid var(--q-magenta);
-            color: var(--q-magenta);
-            padding: 0.5rem 1.25rem;
+            background: rgba(255, 0, 255, 0.1);
+            border: 1px solid rgba(255, 0, 255, 0.3);
+            color: #fff;
+            padding: 0.6rem 1.5rem;
             text-transform: uppercase;
             font-size: 0.8rem;
+            font-weight: 600;
             letter-spacing: 1px;
-            transition: all 0.3s;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             display: flex;
             align-items: center;
             cursor: pointer;
+            border-radius: 12px;
         }
 
         .btn-quantum:hover {
@@ -221,12 +235,13 @@
 
         /* TOOL CARDS (Defined in CSS for reference, but JS generates them) */
         .tool-card {
-            background: rgba(20, 20, 20, 0.4);
+            background: rgba(15, 15, 15, 0.6);
             border: 1px solid var(--border-color);
-            backdrop-filter: blur(5px);
+            backdrop-filter: blur(10px);
             padding: 1.5rem;
+            border-radius: 16px;
             position: relative;
-            transition: all 0.3s;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             cursor: pointer;
             overflow: hidden;
             display: flex;
@@ -263,7 +278,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            border-radius: 4px;
+            border-radius: 10px;
             font-size: 1.2rem;
             color: var(--q-magenta);
             margin-bottom: 1rem;
@@ -289,10 +304,7 @@
             font-size: 0.7rem;
             text-transform: uppercase;
             letter-spacing: 1px;
-            padding: 2px 6px;
-            border: 1px solid var(--q-cyan);
-            color: var(--q-cyan);
-            display: inline-block;
+            border-radius: 6px;
         }
 
         .tool-desc {
@@ -374,9 +386,11 @@
 
         .form-control,
         .form-select {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid #333;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
             color: #fff;
+            padding: 0.6rem 1rem;
         }
 
         .form-control:focus,
@@ -429,8 +443,9 @@
         <div class="main-content">
             <div class="header">
                 <div>
-                    <h1 class="page-title">Function Library</h1>
-                    <p class="text-secondary small mb-0 mt-1" style="letter-spacing: 1px;">QUANTUM FIELD: ACTIVE</p>
+                    <h1 class="page-title">MCP Matrix</h1>
+                    <p class="text-secondary small mb-0 mt-1" style="letter-spacing: 1px;">Register your MCPs in npx
+                        command line tool</p>
                 </div>
                 <a href="index.html" class="btn-quantum btn-quantum-secondary text-decoration-none">
                     <i class="bi bi-arrow-left me-2"></i> RETURN TO HUB
@@ -581,43 +596,20 @@
             particlesGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
 
             const material = new THREE.PointsMaterial({
-                size: 0.3,
-                color: 0xFF00FF, // MAGENTA
+                size: 0.4,
+                color: 0xFFFFFF,
                 transparent: true,
-                opacity: 0.5
+                opacity: 0.3
             });
 
             const particlesMesh = new THREE.Points(particlesGeo, material);
             scene.add(particlesMesh);
 
-            // Floating Geometries (Cyan Accents - Keep for contrast)
-            const shapes = [];
-            const geom = new THREE.OctahedronGeometry(1, 0);
-            const mat = new THREE.MeshBasicMaterial({ color: 0x00FFFF, wireframe: true, transparent: true, opacity: 0.1 });
-
-            for (let i = 0; i < 5; i++) {
-                const mesh = new THREE.Mesh(geom, mat);
-                mesh.position.set(
-                    (Math.random() - 0.5) * 80,
-                    (Math.random() - 0.5) * 50,
-                    (Math.random() - 0.5) * 50
-                );
-                mesh.scale.setScalar(Math.random() * 5 + 2);
-                scene.add(mesh);
-                shapes.push(mesh);
-            }
-
             const animate = () => {
                 requestAnimationFrame(animate);
 
-                particlesMesh.rotation.y += 0.0005;
-                particlesMesh.rotation.z += 0.0002;
-
-                shapes.forEach((shape, i) => {
-                    shape.rotation.x -= 0.002;
-                    shape.rotation.y -= 0.002;
-                    shape.position.y += Math.sin(Date.now() * 0.001 + i) * 0.02;
-                });
+                particlesMesh.rotation.y += 0.0003;
+                particlesMesh.rotation.x += 0.0001;
 
                 renderer.render(scene, camera);
             };

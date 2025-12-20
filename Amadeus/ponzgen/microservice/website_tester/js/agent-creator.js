@@ -429,6 +429,19 @@ const AgentCreator = (function () {
                     previewHtml += `</div></div>`;
                 });
 
+                // Add MCPHub Recommendations container at the bottom
+                previewHtml += `
+                    <div class="mt-4">
+                        <h6 class="text-yellow text-uppercase small mb-3 fw-bold" style="letter-spacing: 1px;">MCP Hub Recommendations</h6>
+                        <div id="mcphub-tools-container" class="bg-dark bg-opacity-50 rounded border border-secondary p-3" style="min-height: 50px;">
+                            <div class="text-center opacity-50 small">
+                                <div class="spinner-border spinner-border-sm text-yellow me-2" role="status"></div>
+                                Analyzing ecosystem for compatible nodes...
+                            </div>
+                        </div>
+                    </div>
+                `;
+
                 previewContainer.innerHTML = previewHtml;
 
                 variations.forEach((agent, index) => {
@@ -512,6 +525,17 @@ const AgentCreator = (function () {
                                     <span class="ms-2 small text-secondary">Synchronizing tool library...</span>
                                 </div>` : ''
                     }
+                        </div>
+
+                        <!-- Add MCPHub Recommendations -->
+                        <div class="mt-4">
+                            <h6 class="text-yellow text-uppercase small mb-3 fw-bold" style="letter-spacing: 1px;">MCP Hub Recommendations</h6>
+                            <div id="mcphub-tools-container" class="bg-dark bg-opacity-50 rounded border border-secondary p-3" style="min-height: 50px;">
+                                <div class="text-center opacity-50 small">
+                                    <div class="spinner-border spinner-border-sm text-yellow me-2" role="status"></div>
+                                    Analyzing ecosystem for compatible nodes...
+                                </div>
+                            </div>
                         </div>
                     </div>
                 `;
@@ -1515,6 +1539,12 @@ const AgentCreator = (function () {
                 // Then autofill tools
                 await this.autofillTools();
 
+                // Trigger recommendation loading
+                if (extractedAgentData.agent_name || extractedAgentData.description) {
+                    const event = new CustomEvent('loadRecommendedTools', { detail: extractedAgentData });
+                    document.dispatchEvent(event);
+                }
+
                 // Generate response showing what was extracted
                 // Tempat mengisi field yang sudah diisi
                 const botResponse = DataProcessor.generateResponseFromExtractedData(extractedAgentData);
@@ -2052,26 +2082,33 @@ const AgentCreator = (function () {
 
                     // Render the recommended tools regardless of multi-agent mode
                     if (recommendedTools.length > 0) {
-                        let toolsHtml = '<ul class="list-group">';
+                        let toolsHtml = '<div class="d-flex flex-column gap-3">';
 
                         recommendedTools.forEach(tool => {
                             // Get tool properties
                             const toolName = tool.name || 'Unknown Tool';
                             const toolDescription = tool.description || 'No description available';
                             const toolUrl = tool.url || '#';
+                            const similarity = tool.similarity ? Math.round(tool.similarity * 100) : null;
 
                             toolsHtml += `
-                                <li class="list-group-item d-flex justify-content-between align-items-start">
-                                    <div class="ms-2 me-auto">
-                                        <div class="fw-bold">${toolName}</div>
-                                        ${toolDescription}
+                                <div class="p-3 rounded border border-secondary bg-dark bg-opacity-25 hover-bright transition-all">
+                                    <div class="d-flex justify-content-between align-items-start mb-1">
+                                        <div class="fw-bold text-white small">${toolName}</div>
+                                        ${similarity ? `<span class="badge bg-glass border border-secondary text-cyan" style="font-size: 0.6rem;">${similarity}% Match</span>` : ''}
                                     </div>
-                                    <a href="${toolUrl}" target="_blank" class="badge bg-primary rounded-pill">MCPHub</a>
-                                </li>
+                                    <p class="text-secondary mb-2" style="font-size: 0.8rem; line-height: 1.3;">${toolDescription}</p>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <a href="${toolUrl}" target="_blank" class="btn btn-xs btn-outline-quantum border-secondary py-0 px-2 opacity-75" style="font-size: 0.7rem;">
+                                            <i class="bi bi-github me-1"></i> View Source
+                                        </a>
+                                        <span class="text-secondary opacity-25" style="font-size: 0.6rem; letter-spacing: 1px;">MCP HUB</span>
+                                    </div>
+                                </div>
                             `;
                         });
 
-                        toolsHtml += '</ul>';
+                        toolsHtml += '</div>';
                         mcphubToolsContainer.innerHTML = toolsHtml;
 
                         // Make sure container is visible
