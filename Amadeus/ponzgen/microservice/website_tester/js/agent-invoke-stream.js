@@ -86,13 +86,71 @@ function removeSelectedImage() {
 // Load available LLM models
 async function loadAvailableModels() {
     const modelSelect = document.getElementById('model-name');
-
-    // Directly set the Custom VLM model as the only option
-    modelSelect.innerHTML = `
-        <option value="legacy-vlm" selected>Legacy Custom VLM (Gemma-2 + CLIP)</option>
-    `;
-
-    console.log('Set default VLM model: custom-vlm');
+    
+    try {
+        // Fetch available models from the backend
+        const response = await fetch(`${getInvokeApiUrl()}/get-llms`);
+        const data = await response.json();
+        
+        if (!data.available_models || data.available_models.length === 0) {
+            modelSelect.innerHTML = '<option value="custom-vlm" selected>Custom VLM (Default)</option>';
+            console.log('No models available from backend, using default');
+            return;
+        }
+        
+        // Build options from available models
+        let options = '';
+        
+        // Add model info if available
+        const modelInfo = data.model_info || {};
+        
+        data.available_models.forEach(modelName => {
+            const info = modelInfo[modelName] || {};
+            const isFree = info.cost && (info.cost.includes('free') || info.cost.includes('FREE'));
+            const toolCalling = info.tool_calling ? '🔧' : '';
+            const vision = info.vision ? '👁️' : '';
+            const freeTag = isFree ? ' [FREE]' : '';
+            
+            // Create descriptive label
+            let label = `${toolCalling}${vision} ${modelName}${freeTag}`;
+            if (info.description) {
+                label = `${toolCalling}${vision} ${modelName}${freeTag}`;
+            }
+            
+            // Mark recommended models
+            const isRecommended = data.recommendations && 
+                (data.recommendations.tool_calling_free === modelName || 
+                 data.recommendations.default_for_mcp === modelName);
+            
+            if (isRecommended) {
+                label = `⭐ ${label}`;
+            }
+            
+            // Select custom-vlm by default
+            const selected = modelName === 'custom-vlm' ? 'selected' : '';
+            options += `<option value="${modelName}" ${selected}>${label}</option>`;
+        });
+        
+        modelSelect.innerHTML = options;
+        
+        console.log(`Loaded ${data.available_models.length} models from backend`);
+        
+        // Show notification about free models if available
+        const freeModels = data.available_models.filter(m => 
+            modelInfo[m] && modelInfo[m].cost && 
+            (modelInfo[m].cost.includes('free') || modelInfo[m].cost.includes('FREE'))
+        );
+        
+        if (freeModels.length > 0 && data.free_tier_info) {
+            console.log(`💡 ${freeModels.length} free models available: ${freeModels.join(', ')}`);
+        }
+        
+    } catch (error) {
+        console.error('Error loading models:', error);
+        // Fallback to default
+        modelSelect.innerHTML = '<option value="custom-vlm" selected>Custom VLM (Default)</option>';
+        console.log('Failed to fetch models, using default');
+    }
 }
 
 // Load agents for the dropdown

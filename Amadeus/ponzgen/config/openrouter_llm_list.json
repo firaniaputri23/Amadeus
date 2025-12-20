@@ -1,5 +1,147 @@
 {
   "available_models": [
-    "custom-vlm"
-  ]
+    "custom-vlm",
+    "google/gemma-3-12b-it:free",
+    "google/gemma-3-27b-it:free",
+    "meta-llama/llama-3.3-70b-instruct:free",
+    "google/gemma-2-9b-it:free",
+    "meta-llama/llama-3.2-3b-instruct:free",
+    "google/gemma-2-9b-it",
+    "google/gemma-2-27b-it",
+    "openai/gpt-4o-mini",
+    "openai/gpt-3.5-turbo",
+    "anthropic/claude-3-haiku",
+    "anthropic/claude-3-5-sonnet",
+    "gpt-3.5-turbo",
+    "gpt-4o-mini"
+  ],
+  "model_info": {
+    "custom-vlm": {
+      "provider": "local",
+      "description": "Local Gemma-2-2b + CLIP vision model",
+      "tool_calling": false,
+      "vision": false,
+      "cost": "free (local)"
+    },
+    "google/gemma-3-12b-it:free": {
+      "provider": "openrouter",
+      "description": "Gemma 3 12B - Text-based ReAct tool calling",
+      "tool_calling": "react_text",
+      "vision": false,
+      "cost": "FREE (rate limited)",
+      "recommended": true,
+      "note": "Uses ReAct text format for tool calling (Thought/Action/Observation)"
+    },
+    "google/gemma-3-27b-it:free": {
+      "provider": "openrouter",
+      "description": "Gemma 3 27B - Text-based ReAct tool calling",
+      "tool_calling": "react_text",
+      "vision": false,
+      "cost": "FREE (rate limited)",
+      "recommended": true,
+      "note": "Uses ReAct text format for tool calling (Thought/Action/Observation)"
+    },
+    "google/gemma-2-9b-it:free": {
+      "provider": "openrouter",
+      "description": "Gemma 2 9B - NO TOOL CALLING SUPPORT",
+      "tool_calling": false,
+      "vision": false,
+      "cost": "FREE (rate limited)",
+      "recommended": false,
+      "note": "Does NOT support tool calling. Use Gemma-3 instead."
+    },
+    "meta-llama/llama-3.3-70b-instruct:free": {
+      "provider": "openrouter",
+      "description": "Llama 3.3 70B - Best free model with tool calling",
+      "tool_calling": true,
+      "vision": false,
+      "cost": "FREE (rate limited)",
+      "recommended": true,
+      "note": "Excellent tool calling support with OpenAI format"
+    },
+    "meta-llama/llama-3.2-3b-instruct:free": {
+      "provider": "openrouter",
+      "description": "Llama 3.2 3B - Lightweight (NO tool calling)",
+      "tool_calling": false,
+      "vision": false,
+      "cost": "FREE (rate limited)",
+      "note": "Does not support tool calling"
+    },
+    "google/gemma-2-9b-it": {
+      "provider": "openrouter",
+      "description": "Gemma 2 9B Paid - NO TOOL CALLING",
+      "tool_calling": false,
+      "vision": false,
+      "cost": "$0.08/$0.08 per 1M tokens",
+      "note": "Gemma-2 series doesn't support tool calling on OpenRouter"
+    },
+    "google/gemma-2-27b-it": {
+      "provider": "openrouter",
+      "description": "Gemma 2 27B Paid - NO TOOL CALLING",
+      "tool_calling": false,
+      "vision": false,
+      "cost": "$0.27/$0.27 per 1M tokens",
+      "note": "Gemma-2 series doesn't support tool calling on OpenRouter"
+    },
+    "openai/gpt-4o-mini": {
+      "provider": "openrouter",
+      "description": "GPT-4o Mini - Fast, affordable, excellent tool calling",
+      "tool_calling": true,
+      "vision": true,
+      "cost": "$0.15/$0.60 per 1M tokens"
+    },
+    "openai/gpt-3.5-turbo": {
+      "provider": "openrouter",
+      "description": "GPT-3.5 Turbo - Reliable and affordable",
+      "tool_calling": true,
+      "vision": false,
+      "cost": "$0.50/$1.50 per 1M tokens"
+    },
+    "anthropic/claude-3-haiku": {
+      "provider": "openrouter",
+      "description": "Claude 3 Haiku - Fast and cost-effective",
+      "tool_calling": true,
+      "vision": true,
+      "cost": "$0.25/$1.25 per 1M tokens"
+    },
+    "anthropic/claude-3-5-sonnet": {
+      "provider": "openrouter",
+      "description": "Claude 3.5 Sonnet - Best reasoning and coding",
+      "tool_calling": true,
+      "vision": true,
+      "cost": "$3.00/$15.00 per 1M tokens"
+    },
+    "gpt-3.5-turbo": {
+      "provider": "openai",
+      "description": "GPT-3.5 Turbo - Direct OpenAI API",
+      "tool_calling": true,
+      "vision": false,
+      "cost": "$0.50/$1.50 per 1M tokens"
+    },
+    "gpt-4o-mini": {
+      "provider": "openai",
+      "description": "GPT-4o Mini - Direct OpenAI API",
+      "tool_calling": true,
+      "vision": true,
+      "cost": "$0.15/$0.60 per 1M tokens"
+    }
+  },
+  "recommendations": {
+    "vision_tasks": "custom-vlm",
+    "tool_calling_free": "meta-llama/llama-3.3-70b-instruct:free",
+    "tool_calling_free_backup": "google/gemma-3-12b-it:free",
+    "tool_calling_paid": "openai/gpt-4o-mini",
+    "best_balance": "openai/gpt-4o-mini",
+    "budget_friendly": "meta-llama/llama-3.3-70b-instruct:free",
+    "most_capable": "anthropic/claude-3-5-sonnet",
+    "default_for_mcp": "meta-llama/llama-3.3-70b-instruct:free",
+    "note": "Llama 3.3 70B: Best free tool calling. Gemma: ReAct text-based tool calling."
+  },
+  "free_tier_info": {
+    "description": "OpenRouter offers free tier models with rate limits",
+    "rate_limits": "Varies by model, typically 10-20 requests/minute",
+    "signup": "https://openrouter.ai/keys",
+    "no_credit_card": true,
+    "note": "Free models have ':free' suffix. Rate limits apply but no cost!"
+  }
 }
