@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ponzgen Agent Matrix</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        :root {
+            --bg-dark: #050505;
+            --panel-bg: rgba(20, 20, 20, 0.6);
+            --border-color: rgba(255, 255, 255, 0.1);
+            --text-primary: #ffffff;
+            --text-secondary: #e0e0e0;
+            /* Brighter gray for better contrast */
+
+            /* Quantum Palette */
+            --q-cyan: #00FFFF;
+            --q-magenta: #FF00FF;
+            --q-yellow: #FFFF00;
+        }
+
+        /* Force high contrast on text utilities */
+        .text-secondary,
+        .text-muted {
+            color: var(--text-secondary) !important;
+            opacity: 0.9;
+        }
+
+        .form-label,
+        .form-text {
+            color: var(--text-primary) !important;
+        }
+
+        .small {
+            font-weight: 500;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-primary);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            overflow-x: hidden;
+            margin: 0;
+            min-height: 100vh;
+        }
+
+        /* THREE.JS BG */
+        #canvas-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        /* LAYOUT */
+        .app-layout {
+            display: flex;
+            height: 100vh;
+        }
+
+        /* SIDEBAR */
+        .sidebar {
+            width: 280px;
+            background: rgba(10, 10, 10, 0.8);
+            backdrop-filter: blur(15px);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            padding: 1.5rem;
+            z-index: 100;
+        }
+
+        .brand {
+            font-size: 1.25rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            margin-bottom: 2rem;
+            color: var(--text-primary);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+        }
+
+        .brand i {
+            color: var(--q-cyan);
+            margin-right: 0.75rem;
+            text-shadow: 0 0 10px var(--q-cyan);
+        }
+
+        .nav-btn {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            text-align: left;
+            padding: 0.75rem 1rem;
+            margin-bottom: 0.5rem;
+            border-radius: 4px;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+        }
+
+        .nav-btn:hover,
+        .nav-btn.active {
+            background: rgba(0, 255, 255, 0.1);
+            border-color: var(--q-cyan);
+            color: var(--text-primary);
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.1);
+        }
+
+        .nav-btn i {
+            margin-right: 0.75rem;
+        }
+
+        .sidebar-stats {
+            margin-top: auto;
+            border-top: 1px solid var(--border-color);
+            padding-top: 1.5rem;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .stat-value {
+            color: var(--q-yellow);
+            font-weight: bold;
+        }
+
+        /* MAIN CONTENT */
+        .main-content {
+            flex: 1;
+            padding: 2rem;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        h1.page-title {
+            font-size: 2rem;
+            font-weight: 300;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin: 0;
+            background: linear-gradient(90deg, #fff, var(--text-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* ACTIONS */
+        .action-bar {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .btn-quantum {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--q-cyan);
+            color: var(--q-cyan);
+            padding: 0.5rem 1.25rem;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 1px;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .btn-quantum:hover {
+            background: var(--q-cyan);
+            color: #000;
+            box-shadow: 0 0 20px var(--q-cyan);
+        }
+
+        .btn-quantum-secondary {
+            border-color: var(--text-secondary);
+            color: var(--text-secondary);
+        }
+
+        .btn-quantum-secondary:hover {
+            border-color: #fff;
+            color: #fff;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        /* GRID */
+        .agent-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        /* CARDS */
+        .agent-card {
+            background: rgba(20, 20, 20, 0.4);
+            border: 1px solid var(--border-color);
+            backdrop-filter: blur(5px);
+            padding: 1.5rem;
+            position: relative;
+            transition: all 0.3s;
+            cursor: pointer;
+            overflow: hidden;
+        }
+
+        .agent-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--q-magenta);
+            box-shadow: 0 0 20px rgba(255, 0, 255, 0.15);
+            background: rgba(255, 0, 255, 0.05);
+        }
+
+        .agent-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 2px;
+            height: 100%;
+            background: var(--q-cyan);
+            transform: scaleY(0);
+            transition: transform 0.3s;
+        }
+
+        .agent-card:hover::before {
+            transform: scaleY(1);
+        }
+
+        .agent-icon {
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.05);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            font-size: 1.2rem;
+            color: var(--q-cyan);
+            margin-bottom: 1rem;
+            border: 1px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .agent-card:hover .agent-icon {
+            border-color: var(--q-cyan);
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+        }
+
+        .agent-name {
+            font-size: 1.1rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 0.5rem;
+        }
+
+        .agent-status {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 2px 6px;
+            border: 1px solid var(--q-yellow);
+            color: var(--q-yellow);
+            display: inline-block;
+            margin-bottom: 1rem;
+        }
+
+        .agent-desc {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        /* DETAILS PANEL */
+        .inspect-panel {
+            position: fixed;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            width: 400px;
+            background: rgba(10, 10, 10, 0.95);
+            backdrop-filter: blur(20px);
+            border-left: 1px solid var(--q-magenta);
+            transform: translateX(100%);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 200;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            box-shadow: -20px 0 50px rgba(0, 0, 0, 0.5);
+        }
+
+        .inspect-panel.show {
+            transform: translateX(0);
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 1rem;
+        }
+
+        .panel-title {
+            color: var(--q-magenta);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-weight: 700;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        .close-btn:hover {
+            color: #fff;
+        }
+
+        /* MODALS (Dark Theme) */
+        .modal-content {
+            background: #111;
+            border: 1px solid var(--border-color);
+            color: #fff;
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.1);
+        }
+
+        .modal-header {
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .modal-footer {
+            border-top: 1px solid var(--border-color);
+        }
+
+        .form-control,
+        .form-select {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid #333;
+            color: #fff;
+        }
+
+        .form-control:focus,
+        .form-select:focus {
+            background: rgba(0, 0, 0, 0.5);
+            border-color: var(--q-cyan);
+            color: #fff;
+            box-shadow: none;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- 3D Background -->
+    <div id="canvas-bg"></div>
+
+    <div class="app-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <a href="index.html" class="brand">
+                <i class="bi bi-cpu"></i> PONZGEN MATRIX
+            </a>
+
+            <nav>
+                <button class="nav-btn w-100 mb-2 active" onclick="loadAgents()">
+                    <i class="bi bi-layers"></i> Overview
+                </button>
+                <div class="mb-4"></div>
+                <label class="text-secondary small text-uppercase mb-2 d-block"
+                    style="font-size: 0.7rem; letter-spacing: 1px;">FILTERS</label>
+                <select class="form-select form-select-sm mb-3 text-uppercase" id="company-filter"
+                    style="font-size: 0.75rem;">
+                    <option value="">All Organizations</option>
+                </select>
+            </nav>
+
+            <div class="sidebar-stats">
+                <div class="stat-item">
+                    <span>TOTAL UNITS</span>
+                    <span class="stat-value" id="stats-total">--</span>
+                </div>
+                <div class="stat-item">
+                    <span>ACTIVE</span>
+                    <span class="stat-value" style="color: var(--q-cyan);" id="stats-active">--</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <div class="header">
+                <div>
+                    <h1 class="page-title">Agent Orchestration</h1>
+                    <p class="text-secondary small mb-0 mt-1" style="letter-spacing: 1px;">QUANTUM FIELD: ACTIVE</p>
+                </div>
+                <a href="index.html" class="btn-quantum btn-quantum-secondary text-decoration-none">
+                    <i class="bi bi-arrow-left me-2"></i> RETURN TO HUB
+                </a>
+            </div>
+
+            <div class="action-bar">
+                <button id="create-agent-btn" class="btn-quantum" data-bs-toggle="modal" data-bs-target="#agent-modal">
+                    <i class="bi bi-plus-lg me-2"></i> DEPLOY UNIT
+                </button>
+                <button id="refresh-agents" class="btn-quantum btn-quantum-secondary">
+                    <i class="bi bi-arrow-clockwise me-2"></i> REFRESH
+                </button>
+                <button id="clone-agent-btn" class="btn-quantum btn-quantum-secondary">
+                    <i class="bi bi-copy me-2"></i> CLONE
+                </button>
+            </div>
+
+            <!-- Agents Grid -->
+            <div id="agents-container" class="agent-grid">
+                <!-- Javascript will inject cards here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Inspector Panel (Slide-in) -->
+    <div class="inspect-panel" id="agent-details-panel">
+        <div class="panel-header">
+            <span class="panel-title">UNIT DIAGNOSTICS</span>
+            <button class="close-btn" onclick="closeAgentDetails()"><i class="bi bi-x"></i></button>
+        </div>
+
+        <div id="agent-details-container" class="flex-grow-1 overflow-auto">
+            <!-- Details injected here -->
+            <div class="text-center text-secondary py-5">
+                <i class="bi bi-scan mb-3 display-4 opacity-25"></i>
+                <p>SELECT AGENT TO SCAN</p>
+            </div>
+        </div>
+
+        <div class="mt-4 border-top border-secondary pt-3" style="border-color: rgba(255,255,255,0.1) !important;">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <span class="small text-uppercase fw-bold text-secondary">CAPABILITIES (TOOLS)</span>
+                <button id="add-tool-btn" class="btn btn-sm btn-outline-info rounded-0 text-uppercase"
+                    style="font-size: 0.7rem;" disabled>
+                    <i class="bi bi-plus"></i> Add
+                </button>
+            </div>
+            <div id="agent-tools-container"></div>
+        </div>
+    </div>
+
+    <!-- MODALS (Preserved Logic, Updated Style) -->
+    <!-- Agent Modal -->
+    <div class="modal fade" id="agent-modal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold text-uppercase" id="agent-modal-label"
+                        style="letter-spacing: 2px; color: var(--q-cyan);">
+                        Configure Unit</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <form id="agent-form">
+                        <input type="hidden" id="agent-id">
+                        <div class="row g-3">
+                            <div class="col-md-12">
+                                <label class="text-secondary small text-uppercase">Designation (Name)</label>
+                                <input type="text" class="form-control" id="agent-name" placeholder="e.g. OMEGA-1"
+                                    required>
+                            </div>
+                            <div class="col-md-12">
+                                <label class="text-secondary small text-uppercase">Directive (Description)</label>
+                                <textarea class="form-control" id="agent-description" rows="2"
+                                    placeholder="Primary operating parameters..."></textarea>
+                            </div>
+                            <div class="col-md-12">
+                                <label class="text-secondary small text-uppercase d-flex justify-content-between">
+                                    <span>Personality Matrix</span>
+                                    <a href="#" class="text-info text-decoration-none"
+                                        onclick="event.preventDefault(); autofillAgentStyle();">
+                                        <i class="bi bi-cpu me-1"></i>AUTO-GEN
+                                    </a>
+                                </label>
+                                <textarea class="form-control" id="agent-style" rows="2"
+                                    placeholder="Tone and behavior protocols..."></textarea>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="text-secondary small text-uppercase">Organization</label>
+                                <select class="form-select" id="agent-company">
+                                    <option value="">Personal Unit</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="text-secondary small text-uppercase">Operational Status</label>
+                                <div class="form-check form-switch mt-2">
+                                    <input class="form-check-input" type="checkbox" id="agent-status" checked
+                                        style="background-color: var(--q-cyan); border-color: var(--q-cyan);">
+                                    <label class="form-check-label text-white" for="agent-status">ONLINE</label>
+                                </div>
+                            </div>
+                            <div class="col-md-12">
+                                <label class="text-secondary small text-uppercase">Capability Modules</label>
+                                <select class="form-select" id="agent-tools" multiple size="4"></select>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">ABORT</button>
+                    <button type="button" class="btn btn-quantum" id="save-agent">INITIALIZE UNIT</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Tool Modal -->
+    <div class="modal fade" id="add-tool-modal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold text-uppercase text-info">Inject Capability</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <select class="form-select" id="available-tools"></select>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">CANCEL</button>
+                    <button type="button" class="btn btn-quantum" id="confirm-add-tool">BIND MODULE</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Clone Agent Modal -->
+    <div class="modal fade" id="clone-agent-modal" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold text-uppercase text-warning">Replicate Unit</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="clone-agents-container" class="text-center text-secondary">Loading matrix...</div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">CANCEL</button>
+                    <button type="button" class="btn btn-quantum" id="confirm-clone" disabled>EXECUTE CLONE</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/main.js"></script>
+    <script src="js/agents.js"></script>
+
+    <script>
+        // --- THREE.JS QUANTUM FIELD BACKGROUND ---
+        const initThreeBg = () => {
+            const container = document.getElementById('canvas-bg');
+            const scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2(0x050505, 0.002);
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.z = 50;
+
+            const renderer = new THREE.WebGLRenderer({ alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            container.appendChild(renderer.domElement);
+
+            // Particles (Stars/Data points)
+            const particlesGeo = new THREE.BufferGeometry();
+            const particlesCount = 1500;
+            const posArray = new Float32Array(particlesCount * 3);
+
+            for (let i = 0; i < particlesCount * 3; i++) {
+                posArray[i] = (Math.random() - 0.5) * 200; // Wide field
+            }
+            particlesGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+
+            const material = new THREE.PointsMaterial({
+                size: 0.3,
+                color: 0x00FFFF, // Cyan stars
+                transparent: true,
+                opacity: 0.5
+            });
+
+            const particlesMesh = new THREE.Points(particlesGeo, material);
+            scene.add(particlesMesh);
+
+            // Floating Geometries (Abstract Data)
+            const shapes = [];
+            const geom = new THREE.IcosahedronGeometry(1, 0);
+            const mat = new THREE.MeshBasicMaterial({ color: 0xFF00FF, wireframe: true, transparent: true, opacity: 0.1 });
+
+            for (let i = 0; i < 5; i++) {
+                const mesh = new THREE.Mesh(geom, mat);
+                mesh.position.set(
+                    (Math.random() - 0.5) * 80,
+                    (Math.random() - 0.5) * 50,
+                    (Math.random() - 0.5) * 50
+                );
+                mesh.scale.setScalar(Math.random() * 5 + 2);
+                scene.add(mesh);
+                shapes.push(mesh);
+            }
+
+            const animate = () => {
+                requestAnimationFrame(animate);
+
+                // Rotate field
+                particlesMesh.rotation.y += 0.0005;
+                particlesMesh.rotation.z += 0.0002;
+
+                // Move abstract shapes
+                shapes.forEach((shape, i) => {
+                    shape.rotation.x += 0.002;
+                    shape.rotation.y += 0.002;
+                    shape.position.y += Math.sin(Date.now() * 0.001 + i) * 0.02;
+                });
+
+                renderer.render(scene, camera);
+            };
+            animate();
+
+            // Resize
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        };
+        initThreeBg();
+
+        // UI Logic Helper
+        function closeAgentDetails() {
+            document.getElementById('agent-details-panel').classList.remove('show');
+        }
+
+        // Observer to open panel when details are populated
+        const observer = new MutationObserver((mutations) => {
+            const container = document.getElementById('agent-details-container');
+            // Check if it has content (more than just the placeholder)
+            if (container.innerHTML.includes('card-body') || container.innerHTML.length > 200) {
+                document.getElementById('agent-details-panel').classList.add('show');
+            }
+        });
+        observer.observe(document.getElementById('agent-details-container'), { childList: true, subtree: true });
+
+    </script>
+</body>
+
+</html>

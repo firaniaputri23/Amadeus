@@ -1,0 +1,81 @@
+{
+  "user": {
+    "id": "12b673cf-c6a3-4d80-afc4-30b6566b3690",
+    "app_metadata": {
+      "provider": "github",
+      "providers": ["github", "google"]
+    },
+    "user_metadata": {
+      "avatar_url": "https://avatars.githubusercontent.com/u/40026523?v=4",
+      "custom_claims": {
+      },
+      "email": "kachponz@gmail.com",
+      "email_verified": true,
+      "full_name": "Kachponz",
+      "iss": "https://api.github.com",
+      "name": "Kachponz",
+      "phone_verified": false,
+      "picture": "https://lh3.googleusercontent.com/a/ACg8ocLnQYDY5gtHFOQVfbyuNO3jqXFwSU2kJ5Br9-eHMMdbdEYEdWw=s96-c",
+      "preferred_username": "kachponz",
+      "provider_id": "kachponz",
+      "sub": "kachponz",
+      "user_name": "kachponz"
+    },
+    "aud": "authenticated",
+    "email": "kachponz@gmail.com",
+    "phone": "",
+    "created_at": "2025-03-15T07:52:41.322101Z",
+    "confirmed_at": "2025-03-15T07:52:41.343016Z",
+    "email_confirmed_at": "2025-03-15T07:52:41.343016Z",
+    "last_sign_in_at": "2025-03-19T04:27:09.252054Z",
+    "role": "authenticated",
+    "updated_at": "2025-03-19T04:27:09.254857Z",
+    "identities": [
+      {
+        "id": "40026523",
+        "user_id": "12b673cf-c6a3-4d80-afc4-30b6566b3690",
+        "identity_data": {
+          "avatar_url": "https://avatars.githubusercontent.com/u/kachponz",
+          "email": "kachponz@gmail.com",
+          "email_verified": true,
+          "full_name": "Kachponz",
+          "iss": "https://api.github.com",
+          "name": "Kachponz",
+          "phone_verified": false,
+          "preferred_username": "kachponz",
+          "provider_id": "kachponz",
+          "sub": "kachponz",
+          "user_name": "kachponz"
+        },
+        "provider": "github",
+        "created_at": "2025-03-17T17:08:47.609287Z",
+        "last_sign_in_at": "2025-03-17T17:08:47.609225Z",
+        "updated_at": "2025-03-19T04:27:09.246422Z"
+      },
+      {
+        "id": "111968180458658251203",
+        "user_id": "12b673cf-c6a3-4d80-afc4-30b6566b3690",
+        "identity_data": {
+          "avatar_url": "https://lh3.googleusercontent.com/a/ACg8ocLnQYDY5gtHFOQVfbyuNO3jqXFwSU2kJ5Br9-eHMMdbdEYEdWw=s96-c",
+          "custom_claims": {
+            "hd": "chi.app"
+          },
+          "email": "kachponz@gmail.com",
+          "email_verified": true,
+          "full_name": "Kachponz",
+          "iss": "https://accounts.google.com",
+          "name": "Kachponz",
+          "phone_verified": false,
+          "picture": "https://lh3.googleusercontent.com/a/ACg8ocLnQYDY5gtHFOQVfbyuNO3jqXFwSU2kJ5Br9-eHMMdbdEYEdWw=s96-c",
+          "provider_id": "111968180458658251203",
+          "sub": "111968180458658251203"
+        },
+        "provider": "google",
+        "created_at": "2025-03-15T07:52:41.336423Z",
+        "last_sign_in_at": "2025-03-15T07:52:41.336366Z",
+        "updated_at": "2025-03-19T04:03:42.867784Z"
+      }
+    ],
+    "factors": null
+  }
+}

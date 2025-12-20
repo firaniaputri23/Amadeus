@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Health Check</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .response-container {
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+        pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="mb-4">API Health Check</h1>
+        
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Health Check Configuration</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label for="api-url-select" class="form-label">API URL to Test</label>
+                    <select class="form-select" id="api-url-select">
+                        <option value="regular">Regular API URL (port 8000)</option>
+                        <option value="invoke">Invoke API URL (port 8001)</option>
+                        <option value="custom">Custom URL</option>
+                    </select>
+                </div>
+                
+                <div class="mb-3" id="custom-url-container" style="display: none;">
+                    <label for="custom-url" class="form-label">Custom URL</label>
+                    <input type="text" class="form-control" id="custom-url" placeholder="Enter custom URL">
+                </div>
+                
+                <div class="mb-3">
+                    <label for="endpoint" class="form-label">Endpoint</label>
+                    <input type="text" class="form-control" id="endpoint" value="/health" placeholder="Enter endpoint (e.g., /health)">
+                </div>
+                
+                <div class="mb-3">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="include-auth">
+                        <label class="form-check-label" for="include-auth">
+                            Include Authorization Header
+                        </label>
+                    </div>
+                </div>
+                
+
+                
+                <button id="check-health" class="btn btn-primary">Check Health</button>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Results</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <h6>Request Details:</h6>
+                    <div class="response-container">
+                        <p><strong>URL:</strong> <span id="request-url">Not sent yet</span></p>
+                        <p><strong>Headers:</strong></p>
+                        <pre id="request-headers">Not sent yet</pre>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <h6>Response:</h6>
+                    <div id="response-container" class="response-container">
+                        <p>No response yet. Click "Check Health" to test the API.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/main.js"></script>
+    <script src="js/health.js"></script>
+</body>
+</html>

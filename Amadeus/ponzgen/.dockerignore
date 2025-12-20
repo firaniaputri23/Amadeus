@@ -1,0 +1,8 @@
+# Exclude build artifacts from host
+microservice/mcp_lib/sendgrid_mcp/build
+microservice/mcp_lib/sendgrid_mcp/node_modules
+
+# But include source files
+!microservice/mcp_lib/sendgrid_mcp/src
+!microservice/mcp_lib/sendgrid_mcp/package.json
+!microservice/mcp_lib/sendgrid_mcp/tsconfig.json

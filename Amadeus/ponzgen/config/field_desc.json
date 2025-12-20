@@ -1,0 +1,15 @@
+{
+  "agent_name": "The name of the agent, which should be descriptive and reflect its purpose or capabilities.",
+  "description": "A detailed description of what the agent does, its capabilities, and its intended use cases.",
+  "agent_style": "Defines the agent's communication style, including formality level (e.g., professional, casual), language, target audience, tone, area of expertise, and any restrictions (e.g., avoiding humor, personal opinions, or off-topic discussions). Example: 'I am a professional customer support agent specializing in technical assistance. I provide clear and concise responses with a formal tone, avoiding casual language, jokes, and speculation.'",
+  "on_status": "Whether the agent is active (true) or inactive (false).",
+  "company_id": "The ID of the company that the agent belongs to, or empty for a personal agent.",
+  "tools": "The list of tools that the agent has access to.",
+  "language": "The primary language that the agent is designed to communicate in.",
+  "experience": "The level of experience or expertise the agent should simulate, typically expressed in years or skill level.",
+  "industry": "The specific industry or sector that the agent specializes in or is designed for.",
+  "target_audience": "The intended users or audience that the agent is designed to serve.",
+  "specialization": "Any specific areas of expertise or specialization that the agent possesses.",
+  "response_length": "The preferred length of responses that the agent should provide (e.g., concise, detailed).",
+  "formality_level": "The level of formality the agent should maintain in its communications (e.g., casual, professional)."
+}

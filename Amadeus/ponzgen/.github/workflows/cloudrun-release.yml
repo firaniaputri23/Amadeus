@@ -1,0 +1,77 @@
+name: Cloud Run Release
+
+on:
+  push:
+    branches:
+      - develop
+
+env:
+  PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+  REGION: ${{ vars.GCP_REGION }}
+  SERVICE_NAME: ${{ vars.GCP_CLOUDRUN_SERVICE }}
+  ARTIFACT_REPO: ${{ vars.GCP_ARTIFACT_REPO }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    environment:
+      name: dev
+      url: https://boilerplate.dev.chiswarm.ai
+
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
+
+      - name: Set up gcloud CLI
+        uses: google-github-actions/setup-gcloud@v1
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+          install_components: 'beta'
+
+      - name: Configure Docker for Artifact Registry
+        run: |
+          gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev
+
+      - name: Export env vars to shell
+        run: |
+          echo "PROJECT_ID=${{ env.PROJECT_ID }}" >> $GITHUB_ENV
+          echo "REGION=${{ env.REGION }}" >> $GITHUB_ENV
+          echo "SERVICE_NAME=${{ env.SERVICE_NAME }}" >> $GITHUB_ENV
+          echo "ARTIFACT_REPO=${{ env.ARTIFACT_REPO }}" >> $GITHUB_ENV
+
+      - name: Build and Push Docker image
+        run: |
+          IMAGE_URI="${REGION}-docker.pkg.dev/${PROJECT_ID}/${ARTIFACT_REPO}/${SERVICE_NAME}:${GITHUB_SHA}"
+          echo "IMAGE_URI=$IMAGE_URI"
+          docker build -t $IMAGE_URI .
+          docker push $IMAGE_URI
+
+      - name: Deploy to Cloud Run
+        run: |
+          IMAGE_URI="${REGION}-docker.pkg.dev/${PROJECT_ID}/${ARTIFACT_REPO}/${SERVICE_NAME}:${GITHUB_SHA}"
+          gcloud run deploy $SERVICE_NAME \
+            --image=$IMAGE_URI \
+            --region=$REGION \
+            --platform=managed \
+            --allow-unauthenticated \
+            --ingress=all \
+            --service-account=${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }} \
+            --memory=3Gi \
+            --cpu=1 \
+            --timeout=300 \
+            --concurrency=80 \
+            --min-instances=1 \
+            --execution-environment=gen2 \
+            --set-env-vars="SUPABASE_URL=${{ secrets.SUPABASE_URL }},SUPABASE_KEY=${{ secrets.SUPABASE_KEY }},JWT_SECRET=${{ secrets.JWT_SECRET }},OPEN_ROUTER_BASE_URL=${{ secrets.OPEN_ROUTER_BASE_URL }},OPEN_ROUTER_API_KEY=${{ secrets.OPEN_ROUTER_API_KEY }}" \
+            --port=8080 \
+            --quiet

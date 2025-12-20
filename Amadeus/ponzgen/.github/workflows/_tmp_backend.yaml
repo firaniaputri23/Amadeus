@@ -1,0 +1,25 @@
+name: Backend - Build & Deploy swarm Backend agent-boilerplate
+
+on:
+ workflow_dispatch:
+ push:
+   branches:
+     - master
+     - develop
+   paths:                               #  for any changes in any of these files: will build and deploy
+     - '**.py'
+     - '**.html'
+     - '**Dockerfile'
+     - 'pyproject.toml'
+
+env:
+  ORGANIZATION: "EventCHI"
+jobs:
+ rag-service:
+   uses: EventCHI/chi-infra-workflows/.github/workflows/k8s-build-deploy.yml@chore/url-change
+   secrets: inherit
+   with:
+     dockerfile_path: "./Dockerfile"
+     service_name: "boilerplate-agent"    
+     docker_context: "."
+     argocd_folder: 'swarm/ai-boilerplate-agent' # not being used for now(?)
