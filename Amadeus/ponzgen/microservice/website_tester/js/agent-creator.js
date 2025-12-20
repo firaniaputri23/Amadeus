@@ -219,14 +219,15 @@ const AgentCreator = (function () {
         addMessage(message, isBot = false) {
             const chatContainer = document.getElementById('chat-container');
             const messageDiv = document.createElement('div');
-            // Use new classes: message-bubble agent/user
-            messageDiv.className = `message-bubble ${isBot ? 'agent' : 'user'} animate__animated animate__fadeInUp`;
+            messageDiv.className = `message ${isBot ? 'bot' : 'user'}`;
 
-            // For agent messages, we might want markdown parsing in the future, but for now text
-            // We can add a small avatar or label if needed, but styling handles it via class
+            const avatarHtml = isBot
+                ? '<div class="avatar"><i class="bi bi-robot"></i></div>'
+                : '<div class="avatar"><i class="bi bi-person-circle fs-4"></i></div>';
+
             messageDiv.innerHTML = `
-                <div class="message-content">${message}</div>
-                <div class="message-meta">${isBot ? 'Architect' : 'You'}</div>
+                ${avatarHtml}
+                <div class="message-bubble">${message}</div>
             `;
 
             chatContainer.appendChild(messageDiv);
@@ -244,11 +245,14 @@ const AgentCreator = (function () {
         addBotTypingIndicator() {
             const chatContainer = document.getElementById('chat-container');
             const indicatorDiv = document.createElement('div');
-            indicatorDiv.className = 'message-bubble agent loading-indicator-bubble';
+            indicatorDiv.className = 'message bot';
             indicatorDiv.id = 'typing-indicator';
             indicatorDiv.innerHTML = `
-                <div class="typing-dots">
-                    <span></span><span></span><span></span>
+                <div class="avatar"><i class="bi bi-robot"></i></div>
+                <div class="message-bubble">
+                    <div class="typing">
+                        <span></span><span></span><span></span>
+                    </div>
                 </div>
             `;
             chatContainer.appendChild(indicatorDiv);
@@ -302,154 +306,121 @@ const AgentCreator = (function () {
                         if (window.availableToolsMap && window.availableToolsMap[toolId]) {
                             toolName = window.availableToolsMap[toolId].name || toolId;
                         }
-                        return `<span class="badge bg-primary me-1 mb-1">${toolName}</span>`;
+                        return `<span class="badge bg-dark border border-secondary text-yellow me-1 mb-1">${toolName}</span>`;
                     });
                     return toolBadges.join(' ');
                 }
-                return '<span class="badge bg-secondary">No tools selected</span>';
+                return '<span class="text-secondary opacity-25 italic">No modules linked</span>';
             }
 
             if (field === 'keywords') {
                 if (Array.isArray(value) && value.length > 0) {
                     return value.map(keyword =>
-                        `<span class="badge bg-info me-1">${keyword}</span>`
+                        `<span class="badge bg-glass border border-secondary text-cyan me-1 mb-1">${keyword}</span>`
                     ).join(' ');
                 }
-                return '<span class="badge bg-secondary">No keywords</span>';
+                return '<span class="text-secondary opacity-25 italic">No keywords established</span>';
             }
 
             if (value === undefined || value === null || value === '') {
-                return '<span class="text-muted">Not specified</span>';
+                return '<span class="text-secondary opacity-25 italic">Not yet defined...</span>';
             }
 
             if (field === 'on_status') {
-                return value ? '<span class="badge bg-success">Active</span>' : '<span class="badge bg-danger">Inactive</span>';
+                return value ? '<span class="text-cyan fw-bold">ACTIVE</span>' : '<span class="text-secondary opacity-50 fw-bold">IDLE</span>';
             }
 
-            return value;
+            return `<span class="text-white">${value}</span>`;
         },
 
         updateAgentPreview(agentData, isMultiAgent = false) {
             const previewContainer = document.getElementById('agent-preview');
+
+            if (!agentData || (Object.keys(agentData).length === 0 && !isMultiAgent)) {
+                previewContainer.innerHTML = `
+                    <div class="text-center py-5 opacity-50">
+                        <i class="bi bi-magic display-3 d-block mb-3 text-yellow"></i>
+                        <p class="small text-secondary text-uppercase" style="letter-spacing: 2px;">Awaiting Extraction</p>
+                    </div>
+                `;
+                return;
+            }
 
             // If it's multi-agent mode and we have variations
             if (isMultiAgent && multiAgentData && multiAgentData.agent_variations && multiAgentData.agent_variations.length > 0) {
                 const variations = multiAgentData.agent_variations;
 
                 let previewHtml = `
-                    <div class="mb-3">
-                        <h6>Common Attributes</h6>
-                        <div class="mb-3">
+                    <div class="mb-4">
+                        <h6 class="text-yellow text-uppercase small mb-3 fw-bold" style="letter-spacing: 1px;">Core Swarm Matrix</h6>
                 `;
 
                 // Display common attributes
                 for (const [field, value] of Object.entries(multiAgentData.common_attributes)) {
-                    if (value && typeof value !== 'object') {
+                    if (value && typeof value !== 'object' && field !== 'keywords') {
                         const formattedValue = this.formatFieldValue(field, value);
                         previewHtml += `
-                            <div class="field-item field-item--filled mb-2">
-                                <strong>${field}:</strong> ${formattedValue}
+                            <div class="field-card filled mb-2">
+                                <label class="field-label">${field}</label>
+                                <p class="field-value">${formattedValue}</p>
                             </div>
                         `;
                     }
                 }
 
-                // Add keywords if available in common attributes or extractedAgentData
+                // Add keywords
                 const keywords = multiAgentData.common_attributes.keywords || extractedAgentData.keywords;
                 if (keywords && Array.isArray(keywords) && keywords.length > 0) {
                     previewHtml += `
-                        <div class="field-item field-item--filled mb-2">
-                            <strong>keywords:</strong>
-                            <div class="mt-1">
-                                ${keywords.map(keyword =>
-                        `<span class="badge bg-info me-1">${keyword}</span>`
-                    ).join('')}
-                            </div>
+                        <div class="field-card filled mb-2">
+                            <label class="field-label">Swarm Keywords</label>
+                            <div class="mt-1">${this.formatFieldValue('keywords', keywords)}</div>
                         </div>
                     `;
                 }
 
-                previewHtml += `</div><h6>Agent Variations (${variations.length})</h6>`;
-
-                // Add a legend to explain the highlighting
-                previewHtml += `
-                    <div class="mb-3 small">
-                        <div class="d-flex align-items-center gap-2">
-                            <div class="field-item--agent-specific" style="width: 20px; height: 20px; border-radius: 3px;"></div>
-                            <span>Agent-specific fields</span>
-                        </div>
-                        <div class="d-flex align-items-center gap-2 mt-1">
-                            <div class="field-item--filled" style="width: 20px; height: 20px; border-radius: 3px;"></div>
-                            <span>Common fields (inherited by all agents)</span>
-                        </div>
-                    </div>
-                `;
+                previewHtml += `</div><h6 class="text-yellow text-uppercase small mb-3 fw-bold" style="letter-spacing: 1px;">Agent Nodes (${variations.length})</h6>`;
 
                 // Display each agent variation
                 variations.forEach((agent, index) => {
                     previewHtml += `
-                        <div class="card mb-2">
-                            <div class="card-header bg-light">
-                                <strong>Agent ${index + 1}: ${agent.agent_name || 'Unnamed'}</strong>
+                        <div class="tool-preview-card mb-3">
+                            <div class="tool-preview-header">
+                                <span class="text-white fw-bold"><i class="bi bi-robot me-2"></i>Node ${index + 1}: ${agent.agent_name || 'Unnamed'}</span>
                             </div>
-                            <div class="card-body p-2">
+                            <div class="p-3">
                     `;
 
-                    // Create a complete agent view by merging common attributes with agent-specific ones
                     const completeAgent = { ...multiAgentData.common_attributes, ...agent };
 
-                    // Add all fields for this agent (both common and agent-specific)
                     for (const [field, value] of Object.entries(completeAgent)) {
-                        if (value && typeof value !== 'object' && field !== 'keywords') {
+                        if (value && typeof value !== 'object' && field !== 'keywords' && field !== 'agent_name') {
                             const formattedValue = this.formatFieldValue(field, value);
-                            // Add a special class if this field is agent-specific (not in common attributes)
                             const isAgentSpecific = !multiAgentData.common_attributes.hasOwnProperty(field) ||
                                 multiAgentData.common_attributes[field] !== value;
+
                             previewHtml += `
-                                <div class="field-item field-item--filled mb-1 ${isAgentSpecific ? 'field-item--agent-specific' : ''}">
-                                    <strong>${field}:</strong> ${formattedValue}
+                                <div class="mb-2 p-2 rounded" style="background: ${isAgentSpecific ? 'rgba(0, 255, 255, 0.03)' : 'transparent'}">
+                                    <label class="field-label mb-0" style="color: ${isAgentSpecific ? 'var(--q-cyan)' : 'var(--q-yellow)'}; font-size: 0.65rem;">${field}</label>
+                                    <p class="field-value mb-0">${formattedValue}</p>
                                 </div>
                             `;
                         }
                     }
 
-                    // Add agent-specific keywords if present, or fall back to common keywords
-                    const agentKeywords = agent.keywords && Array.isArray(agent.keywords) && agent.keywords.length > 0 ?
-                        agent.keywords : keywords;
-                    if (agentKeywords && Array.isArray(agentKeywords) && agentKeywords.length > 0) {
-                        const isAgentSpecific = agent.keywords && Array.isArray(agent.keywords) && agent.keywords.length > 0;
-                        previewHtml += `
-                            <div class="field-item field-item--filled mb-1 ${isAgentSpecific ? 'field-item--agent-specific' : ''}">
-                                <strong>keywords:</strong>
-                                <div class="mt-1">
-                                    ${agentKeywords.map(keyword =>
-                            `<span class="badge bg-info me-1">${keyword}</span>`
-                        ).join('')}
-                                </div>
-                            </div>
-                        `;
-                    }
-
                     // Add agent-specific tool selection
                     previewHtml += `
-                        <div class="field-item field-item--filled mt-3 field-item--agent-specific">
-                            <strong>Available Tools:</strong>
-                            <div class="tools-actions mt-2">
-                                <button type="button" class="btn btn-sm btn-outline-primary select-all-agent-tools" data-agent-index="${index}">Select All</button>
-                                <button type="button" class="btn btn-sm btn-outline-secondary deselect-all-agent-tools" data-agent-index="${index}">Deselect All</button>
+                        <div class="mt-3">
+                            <label class="field-label">Module Integration</label>
+                            <div class="d-flex gap-2 mb-2">
+                                <button type="button" class="btn btn-xs btn-outline-quantum select-all-agent-tools" data-agent-index="${index}">Link All</button>
+                                <button type="button" class="btn btn-xs btn-outline-secondary deselect-all-agent-tools" data-agent-index="${index}">Unlink All</button>
                             </div>
                             
-                            <div class="mt-2 mb-3">
-                                <input type="text" class="form-control form-control-sm agent-tool-search" data-agent-index="${index}" placeholder="Search tools for this agent...">
-                            </div>
-                            
-                            <div class="mt-2 tool-selection-container agent-tool-checkboxes" id="agent-${index}-tool-checkboxes-container">
-                                <!-- Tool checkboxes will be added here dynamically -->
+                            <div class="tool-selection-container p-2 bg-dark rounded border border-secondary" id="agent-${index}-tool-checkboxes-container" style="max-height: 200px; overflow-y: auto;">
                                 <div class="loading-indicator">
-                                    <div class="spinner-border spinner-border-sm text-primary" role="status">
-                                        <span class="visually-hidden">Loading...</span>
-                                    </div>
-                                    <span class="ms-2">Loading tools...</span>
+                                    <div class="spinner-border spinner-border-sm text-yellow" role="status"></div>
+                                    <span class="ms-2 small text-secondary">Awaiting modules...</span>
                                 </div>
                             </div>
                         </div>
@@ -458,137 +429,95 @@ const AgentCreator = (function () {
                     previewHtml += `</div></div>`;
                 });
 
-                // Add MCPHub Recommendations section at the bottom - multi-agent version
-                previewHtml += `
-                    <!-- MCPHub Recommendations -->
-                    <div class="field-item mt-3">
-                        <div class="tools-header">
-                            <strong>MCPHub Recommendation:</strong>
-                        </div>
-                        <div class="mt-2 mcphub-tools-container" id="mcphub-tools-container">
-                            <div class="loading-indicator" id="mcphub-tools-loading">
-                                <div class="spinner-border spinner-border-sm text-primary" role="status">
-                                    <span class="visually-hidden">Loading...</span>
-                                </div>
-                                <span class="ms-2">Getting MCPHub recommendations...</span>
-                            </div>
-                        </div>
-                        <div class="text-muted small mt-2">
-                            <i class="bi bi-info-circle"></i> 
-                            These are recommended tools from MCPHub based on all your agents' combined keywords.
-                        </div>
-                    </div>
-                `;
-
                 previewContainer.innerHTML = previewHtml;
 
-                // Initialize tool checkboxes for each agent
                 variations.forEach((agent, index) => {
                     this.populateAgentToolCheckboxes(index, agent.tools || []);
                 });
 
-                // Add tool event listeners for agent-specific controls
                 this.setupAgentToolInteractionListeners();
 
             } else {
                 // Standard single agent preview
                 let previewHtml = '';
 
-                // Display fields that have values
-                for (const [field, value] of Object.entries(agentData)) {
-                    if (value && typeof value !== 'object' && field !== 'keywords') {
-                        const formattedValue = this.formatFieldValue(field, value);
-                        previewHtml += `
-                            <div class="field-item field-item--filled mb-2">
-                                <strong>${field}:</strong> ${formattedValue}
-                            </div>
-                        `;
-                    }
-                }
-
-                // Add keywords if available
-                if (agentData.keywords && Array.isArray(agentData.keywords) && agentData.keywords.length > 0) {
-                    previewHtml += `
-                        <div class="field-item field-item--filled mb-2">
-                            <strong>keywords:</strong>
-                            <div class="mt-1">
-                                ${agentData.keywords.map(keyword =>
-                        `<span class="badge bg-info me-1">${keyword}</span>`
-                    ).join('')}
-                            </div>
-                        </div>
-                    `;
-                }
-
-                // Add tools selection section with autofill indicator
+                // Agent Header Card
                 previewHtml += `
-                    <div class="field-item mt-3">
-                        <div class="tools-header">
-                            <strong>Available Tools:</strong>
-                            <div class="d-flex align-items-center">
-                                <div class="tools-status me-3">
-                                    ${isToolsAutofilling ?
-                        `<span class="autofill-status autofilling"><i class="bi bi-arrow-repeat spin"></i> Auto-selecting tools...</span>` :
-                        `<span class="autofill-status complete"><i class="bi bi-check-circle-fill text-success"></i> Tools loaded</span>`
-                    }
-                                </div>
-                                <div class="tools-actions">
-                                    <button type="button" class="btn btn-sm btn-outline-primary" id="select-all-tools">Select All</button>
-                                    <button type="button" class="btn btn-sm btn-outline-secondary" id="deselect-all-tools">Deselect All</button>
-                                </div>
+                    <div class="field-card filled mb-4">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="avatar bg-yellow text-dark rounded-circle" style="width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">
+                                <i class="bi bi-robot"></i>
                             </div>
-                        </div>
-                        
-                        <div class="mt-2 mb-3">
-                            <input type="text" class="form-control form-control-sm" id="tool-search" placeholder="Search tools...">
-                        </div>
-                        
-                        <div class="mt-2 tool-selection-container" id="tool-checkboxes-container">
-                            <!-- Tool checkboxes will be added here dynamically -->
-                            ${!window.availableTools || window.availableTools.length === 0 ?
-                        `<div class="loading-indicator">
-                                    <div class="spinner-border spinner-border-sm text-primary" role="status">
-                                        <span class="visually-hidden">Loading tools...</span>
-                                    </div>
-                                    <span class="ms-2">Loading available tools...</span>
-                                </div>` : ''
-                    }
-                        </div>
-                        
-                        <div class="text-muted small mt-2">
-                            <i class="bi bi-info-circle"></i> 
-                            Select tools your agent should have access to. Only active tools will be available for use.
-                        </div>
-                    </div>
-                    
-                    <!-- MCPHub Recommendations -->
-                    <div class="field-item mt-3">
-                        <div class="tools-header">
-                            <strong>MCPHub Recommendation:</strong>
-                        </div>
-                        <div class="mt-2 mcphub-tools-container" id="mcphub-tools-container">
-                            <div class="loading-indicator" id="mcphub-tools-loading">
-                                <div class="spinner-border spinner-border-sm text-primary" role="status">
-                                    <span class="visually-hidden">Loading...</span>
-                                </div>
-                                <span class="ms-2">Getting MCPHub recommendations...</span>
+                            <div class="overflow-hidden">
+                                <label class="field-label mb-0" style="font-size: 0.6rem;">Agent Identity</label>
+                                <h5 class="text-white mb-0 text-truncate">${agentData.agent_name || 'Designating...'}</h5>
                             </div>
-                        </div>
-                        <div class="text-muted small mt-2">
-                            <i class="bi bi-info-circle"></i> 
-                            These are recommended tools from MCPHub based on your agent's purpose.
                         </div>
                     </div>
                 `;
 
-                // If no fields, show default message
-                if (!previewHtml) {
-                    previewHtml = '<p class="text-center text-muted">No agent details available yet</p>';
+                const fields = [
+                    { key: 'agent_id', label: 'Network ID', icon: 'bi-hash' },
+                    { key: 'description', label: 'Primary Directive', icon: 'bi-card-text' },
+                    { key: 'agent_style', label: 'Persona Profile', icon: 'bi-palette' },
+                    { key: 'company_id', label: 'Corporate Entity', icon: 'bi-building' }
+                ];
+
+                fields.forEach(field => {
+                    const value = agentData[field.key];
+                    const isFilled = value && value !== '';
+                    previewHtml += `
+                        <div class="field-card ${isFilled ? 'filled' : ''}">
+                            <label class="field-label">
+                                <i class="bi ${field.icon} me-1"></i> ${field.label}
+                            </label>
+                            <p class="field-value">${this.formatFieldValue(field.key, value)}</p>
+                        </div>
+                    `;
+                });
+
+                // Add keywords
+                if (agentData.keywords && Array.isArray(agentData.keywords) && agentData.keywords.length > 0) {
+                    previewHtml += `
+                        <div class="field-card filled">
+                            <label class="field-label">Core Keywords</label>
+                            <div class="mt-1">${this.formatFieldValue('keywords', agentData.keywords)}</div>
+                        </div>
+                    `;
                 }
+
+                // Add tools selection
+                previewHtml += `
+                    <div class="mt-4">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                             <h6 class="text-yellow text-uppercase small fw-bold m-0" style="letter-spacing: 1px;">Module Ecosystem</h6>
+                             <div class="d-flex gap-1">
+                                <button type="button" class="btn btn-xs btn-outline-quantum" id="select-all-tools">Link All</button>
+                                <button type="button" class="btn btn-xs btn-outline-secondary" id="deselect-all-tools">Unlink All</button>
+                             </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="input-wrapper py-1 px-3" style="border-radius: 8px;">
+                                <i class="bi bi-search text-secondary small"></i>
+                                <input type="text" class="form-control form-control-sm border-0 bg-transparent" id="tool-search" placeholder="Filter modules...">
+                            </div>
+                        </div>
+                        
+                        <div class="tool-selection-container p-3 bg-dark bg-opacity-50 rounded border border-secondary" id="tool-checkboxes-container" style="max-height: 300px; overflow-y: auto;">
+                            <!-- Tool checkboxes will be added here dynamically -->
+                            ${!window.availableTools || window.availableTools.length === 0 ?
+                        `<div class="loading-indicator">
+                                    <div class="spinner-border spinner-border-sm text-yellow" role="status"></div>
+                                    <span class="ms-2 small text-secondary">Synchronizing tool library...</span>
+                                </div>` : ''
+                    }
+                        </div>
+                    </div>
+                `;
 
                 previewContainer.innerHTML = previewHtml;
 
-                // Add tool checkboxes
                 this.setupToolInteractionListeners();
             }
         },
@@ -657,25 +586,24 @@ const AgentCreator = (function () {
             const container = document.getElementById('tool-checkboxes-container');
             if (!container) return;
 
-            // Check if we have available tools
             if (!window.availableTools || window.availableTools.length === 0) {
                 container.innerHTML = `
-            <div class="alert bg-dark border border-secondary text-info d-flex align-items-center">
-                <i class="bi bi-info-circle me-2"></i>
-                <div>No available tools found. Please wait for tools to load or check your connection.</div>
-            </div>
-        `;
+                    <div class="p-3 text-center opacity-50 small">
+                        <i class="bi bi-exclamation-triangle-fill text-yellow d-block mb-2 fs-4"></i>
+                        NO MODULES DETECTED
+                    </div>
+                `;
                 return;
             }
 
             // Show loading indicator if we're autofilling
             if (isToolsAutofilling) {
                 container.innerHTML = `
-                    <div class="loading-indicator">
-                        <div class="spinner-border spinner-border-sm text-primary" role="status">
+                    <div class="loading-indicator d-flex align-items-center justify-content-center p-5">
+                        <div class="spinner-border spinner-border-sm" style="color: var(--q-yellow);" role="status">
                             <span class="visually-hidden">Loading tools...</span>
                         </div>
-                        <span class="ms-2">Auto-selecting relevant tools...</span>
+                        <span class="ms-3 text-secondary small text-uppercase fw-bold" style="letter-spacing: 1px;">Synthesizing module dependencies...</span>
                     </div>
                 `;
                 return;
@@ -705,30 +633,32 @@ const AgentCreator = (function () {
             sortedTools.forEach(tool => {
                 // Check if this tool is in the selected tools set
                 const isChecked = selectedToolsSet.has(tool.tool_id);
+                const statusColor = tool.on_status === 'Online' ? 'var(--q-yellow)' : 'rgba(255,255,255,0.2)';
 
                 checkboxesHtml += `
             <div class="form-check mb-2 tool-checkbox-item" data-tool-name="${tool.name.toLowerCase()}" data-tool-id="${tool.tool_id}">
                 <div class="d-flex align-items-start p-3 border rounded tool-card-select ${isChecked ? 'selected' : ''}" 
-                     style="background: rgba(255,255,255,0.02); border-color: ${isChecked ? 'var(--q-cyan)' : 'var(--border-color)'} !important; transition: all 0.3s;">
-                    <input class="form-check-input tool-checkbox me-3" 
-                           type="checkbox" 
-                           value="${tool.tool_id}" 
-                           id="tool-${tool.tool_id}"
-                           style="min-width: 20px; margin-top: 4px; border-color: var(--q-cyan);"
-                           ${isChecked ? 'checked' : ''}>
-                    <div class="flex-grow-1">
-                        <label class="form-check-label d-block text-white fw-bold mb-1" for="tool-${tool.tool_id}">
+                     style="background: rgba(255,255,255,0.02); border-color: ${isChecked ? 'var(--q-yellow)' : 'var(--border-color)'} !important; border-width: 1px; transition: all 0.3s; ${isChecked ? 'box-shadow: 0 0 15px rgba(255, 255, 0, 0.05);' : ''}">
+                    <div class="me-3 mt-1">
+                        <input class="form-check-input tool-checkbox" 
+                               type="checkbox" 
+                               value="${tool.tool_id}" 
+                               id="tool-${tool.tool_id}"
+                               style="width: 18px; height: 18px; border-color: var(--q-yellow); background-color: transparent;"
+                               ${isChecked ? 'checked' : ''}>
+                    </div>
+                    <div class="flex-grow-1 overflow-hidden">
+                        <label class="form-check-label d-block text-white fw-bold mb-1 text-truncate" for="tool-${tool.tool_id}" style="font-size: 0.9rem; letter-spacing: 0.5px;">
                             ${tool.name}
                         </label>
-                        <div class="small text-secondary mb-2" style="opacity: 0.8;">
-                            ${tool.description || 'No description available'}
+                        <div class="small text-secondary mb-2 text-truncate" style="opacity: 0.7; font-size: 0.75rem;">
+                            ${tool.description || 'No data segment available'}
                         </div>
-                        <div class="tool-meta">
-                            <small class="text-secondary">Status: 
-                                <span class="badge ${tool.on_status === 'Online' ? 'bg-success-subtle text-success' : 'bg-secondary text-white-50'} border border-opacity-25 ${tool.on_status === 'Online' ? 'border-success' : 'border-secondary'}">
-                                    ${tool.on_status === 'Online' ? 'ACTIVE' : tool.on_status === 'Predefined' ? 'SYSTEM' : 'OFFLINE'}
-                                </span>
-                            </small>
+                        <div class="d-flex align-items-center">
+                            <div style="width: 6px; height: 6px; border-radius: 50%; background: ${statusColor}; box-shadow: 0 0 5px ${statusColor}; margin-right: 8px;"></div>
+                            <span class="text-secondary" style="font-size: 0.65rem; letter-spacing: 1px; text-transform: uppercase;">
+                                ${tool.on_status === 'Online' ? 'Active Matrix' : 'Offline'}
+                            </span>
                         </div>
                     </div>
                 </div>
@@ -847,42 +777,36 @@ const AgentCreator = (function () {
             // Create a template function for tool HTML
             const createToolHTML = (tool, isChecked) => {
                 const div = document.createElement('div');
-                // Column layout for grid inside the container
-                div.className = 'col-12';
+                div.className = 'tool-checkbox-item mb-2';
                 div.dataset.agentIndex = agentIndex;
                 div.dataset.toolName = tool.name.toLowerCase();
                 div.dataset.toolId = tool.tool_id;
 
-                div.innerHTML = `
-            <div class="form-check p-2 border rounded d-flex align-items-center justify-content-between position-relative tool-card-select ${isChecked ? 'selected' : ''}" 
-                 style="background: rgba(255,255,255,0.02); border-color: ${isChecked ? 'var(--q-cyan)' : 'var(--border-color)'} !important; transition: all 0.2s;">
-                 
-                <div class="d-flex align-items-center flex-grow-1" style="min-width: 0;">
-                    <input class="form-check-input agent-tool-checkbox me-3 flex-shrink-0" 
-                           type="checkbox" 
-                           value="${tool.tool_id}" 
-                           id="agent-${agentIndex}-tool-${tool.tool_id}"
-                           data-agent-index="${agentIndex}"
-                           style="border-color: var(--q-cyan);"
-                           ${isChecked ? 'checked' : ''}>
-                           
-                    <div class="flex-grow-1" style="min-width: 0;">
-                        <label class="form-check-label d-block text-truncate fw-bold text-white small" for="agent-${agentIndex}-tool-${tool.tool_id}">
-                            ${tool.name}
-                        </label>
-                        <p class="mb-0 text-secondary text-truncate small" style="font-size: 0.75rem; opacity: 0.7;">
-                            ${tool.description || 'No description available'}
-                        </p>
-                    </div>
-                </div>
+                const statusColor = tool.on_status === 'Online' ? 'var(--q-yellow)' : 'rgba(255,255,255,0.2)';
 
-                <div class="ms-2 flex-shrink-0">
-                    <span class="badge ${tool.on_status === 'Online' ? 'bg-success-subtle text-success' : 'bg-secondary text-white-50'} border border-opacity-25 ${tool.on_status === 'Online' ? 'border-success' : 'border-secondary'}" style="font-size: 0.65rem;">
-                         ${tool.on_status === 'Online' ? 'ON' : 'OFF'}
-                    </span>
-                </div>
-            </div>
-        `;
+                div.innerHTML = `
+                    <div class="d-flex align-items-center p-2 rounded" 
+                         style="background: rgba(255,255,255,0.03); border: 1px solid ${isChecked ? 'var(--q-yellow)' : 'var(--border-color)'}; transition: all 0.2s;">
+                        <input class="form-check-input agent-tool-checkbox me-3 mt-0" 
+                               type="checkbox" 
+                               value="${tool.tool_id}" 
+                               id="agent-${agentIndex}-tool-${tool.tool_id}"
+                               data-agent-index="${agentIndex}"
+                               style="border-color: var(--q-yellow); background-color: transparent;"
+                               ${isChecked ? 'checked' : ''}>
+                        <div class="flex-grow-1 overflow-hidden">
+                            <label class="form-check-label d-block text-white fw-bold small text-truncate" for="agent-${agentIndex}-tool-${tool.tool_id}" style="font-size: 0.75rem;">
+                                ${tool.name}
+                            </label>
+                            <div class="text-secondary text-truncate" style="font-size: 0.6rem; opacity: 0.8;">
+                                ${tool.description || 'No data segment'}
+                            </div>
+                        </div>
+                        <div class="ms-2">
+                            <div style="width: 8px; height: 8px; border-radius: 50%; background: ${statusColor}; box-shadow: 0 0 5px ${statusColor};"></div>
+                        </div>
+                    </div>
+                `;
                 return div;
             };
 
@@ -1081,42 +1005,26 @@ const AgentCreator = (function () {
         },
 
         generateResponseFromExtractedData(extractedData) {
-            // Check if anything was extracted
             const extractedFields = Object.entries(extractedData)
                 .filter(([_, value]) => value && value !== "")
                 .map(([field, _]) => field);
 
             if (extractedFields.length === 0) {
-                return "I couldn't extract any specific details from your description. Please provide more information about what you want this agent to do, its purpose, and any specific capabilities it should have.";
+                return "Protocol failed to isolate specific parameters within the neural link. High-level directives required regarding the agent's primary mission and behavioral logic.";
             }
 
-            // Determine if we have enough data to create a meaningful agent
             const hasCoreFunctionality = extractedData.agent_name && extractedData.description;
-
-            // Generate response based on what was extracted
-            let response = "Thanks for your description! ";
+            let response = "Extraction successful. ";
 
             if (hasCoreFunctionality) {
-                // We have good basic information
-                response += `I've extracted information for your agent including: ${extractedFields.join(', ')}. `;
-                response += "You can review the details in the preview panel and create the agent when ready. ";
-
-                // Suggest more information that could be added
-                if (!extractedData.tools || extractedData.tools.length === 0) {
-                    response += "You may want to select some tools for your agent before creating it.";
-                } else {
-                    response += "The agent looks complete and ready to use!";
-                }
+                response += `I've successfully mapped the structural blueprints for <strong>${extractedData.agent_name}</strong>. Clusters identified: <code>${extractedFields.join(', ')}</code>. `;
+                response += "The architecture is being visualized in the preview panel. Shall we initiate tool integration or refine the system parameters?";
             } else {
-                // We're missing core information
-                response += `I was able to extract some information (${extractedFields.join(', ')}), but I need more details. `;
-
+                response += `I've captured partial parameters (<code>${extractedFields.join(', ')}</code>), but the blueprint remains structurally unstable. `;
                 const missingRequired = [];
-                if (!extractedData.agent_name) missingRequired.push("name");
-                if (!extractedData.description) missingRequired.push("description");
-
-                response += `Please provide${missingRequired.length > 0 ? ` the agent's ${missingRequired.join(' and ')} and` : ''} more specific information about what this agent should do. `;
-                response += "For example, tell me about its purpose, how it should interact with users, or what tasks it should perform.";
+                if (!extractedData.agent_name) missingRequired.push("Identification (Name)");
+                if (!extractedData.description) missingRequired.push("Directives (Description)");
+                response += `Please provide the missing ${missingRequired.join(' and ')} to stabilize the architecture.`;
             }
 
             return response;
@@ -1323,16 +1231,17 @@ const AgentCreator = (function () {
                 }
             });
 
-            // Add event listeners for example buttons
-            document.querySelectorAll('.example-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const exampleText = btn.getAttribute('data-example');
+            // Add event listeners for example buttons (chips)
+            document.querySelectorAll('.example-chip').forEach(chip => {
+                chip.addEventListener('click', () => {
+                    const exampleText = chip.getAttribute('data-example');
                     if (exampleText) {
-                        document.getElementById('user-input').value = exampleText;
+                        const inputField = document.getElementById('user-input');
+                        inputField.value = exampleText;
                         // Focus on the input field
-                        document.getElementById('user-input').focus();
-                        // Trigger input event to resize textarea
-                        document.getElementById('user-input').dispatchEvent(new Event('input'));
+                        inputField.focus();
+                        // Trigger input event to resize textarea (if applicable)
+                        inputField.dispatchEvent(new Event('input'));
                     }
                 });
             });
@@ -1551,9 +1460,14 @@ const AgentCreator = (function () {
                         console.log('Raw buffer content:', buffer);
 
                         // Show more descriptive error if we have raw content that failed to parse
-                        let errorMessage = "I couldn't extract any information from your description. Please provide more specific details about what you want the agent to do.";
-                        if (buffer && buffer.length > 0) {
-                            errorMessage += ` (Debug: Raw output received but failed to parse: ${buffer.substring(0, 100)}...)`;
+                        let errorMessage = "I couldn't extract structured architecture from your description. ";
+                        if (buffer && buffer.trim().length > 0) {
+                            errorMessage += "The neural link returned raw data that doesn't fit the expected blueprint format. \n\n" +
+                                "<strong>Raw Transmission:</strong><br><div class='p-2 bg-dark rounded mt-2 border border-secondary small opacity-75' style='max-height: 200px; overflow-y: auto;'>" +
+                                buffer + "</div>\n\n" +
+                                "Please try specifying the agent name and description more clearly.";
+                        } else {
+                            errorMessage += "The extraction matrix returned null content. Please provide a more detailed mission statement for the agent.";
                         }
 
                         UiManager.addBotMessage(errorMessage);
@@ -2332,30 +2246,38 @@ const AgentCreator = (function () {
         generateMultiAgentResponse(response) {
             const formatField = (field, value) => {
                 if (field === 'keywords' && Array.isArray(value)) {
-                    return `- ${field}: ${value.join(', ')}\n`;
+                    return `   • ${field}: ${value.join(', ')}\n`;
                 }
-                return value && typeof value !== 'object' ? `- ${field}: ${value}\n` : '';
+                return value && typeof value !== 'object' ? `   • ${field}: ${value}\n` : '';
             };
 
-            let botResponse = `I've detected ${response.agent_count} agents in your description.\n\n`;
+            let botResponse = `I've detected ${response.agent_count} distinct entities within your description.\n\n`;
 
             // Add common attributes
-            botResponse += "**Common attributes for all agents:**\n";
-            Object.entries(response.common_attributes || {}).forEach(([field, value]) => {
-                botResponse += formatField(field, value);
-            });
+            const commonFields = Object.entries(response.common_attributes || {}).filter(([_, v]) => v && v !== "");
+            if (commonFields.length > 0) {
+                botResponse += "**Shared Architecture Blueprint:**\n";
+                commonFields.forEach(([field, value]) => {
+                    botResponse += formatField(field, value);
+                });
+                botResponse += "\n";
+            }
 
             // Add agent variations
-            botResponse += "\n**Agent variations:**\n";
+            botResponse += "**Individual Module Variations:**\n";
             response.agent_variations.forEach((agent, index) => {
-                botResponse += `\nAgent ${index + 1}: ${agent.agent_name || 'Unnamed'}\n`;
+                const agentName = agent.agent_name || response.common_attributes?.agent_name || `Agent ${index + 1}`;
+                botResponse += `\n**Entity ${index + 1}: ${agentName}**\n`;
+
                 Object.entries(agent).forEach(([field, value]) => {
-                    if (!response.common_attributes?.[field]) {
+                    // Only show field if it's not already in common_attributes or if it's different
+                    if (value && (!response.common_attributes?.[field] || response.common_attributes[field] !== value)) {
                         botResponse += formatField(field, value);
                     }
                 });
             });
 
+            botResponse += "\nNeural link matrices are visible in the inspector. Should we proceed with multi-agent compile?";
             return botResponse;
         },
 

@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Monochrome Stream | Ponzgen</title>
+    <title>Quantum Stream | Ponzgen</title>
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -16,16 +16,16 @@
 
     <style>
         :root {
-            --bg-dark: #000000;
+            --bg-dark: #050505;
             --panel-bg: rgba(20, 20, 20, 0.8);
-            --border-color: rgba(255, 255, 255, 0.2);
+            --border-color: rgba(255, 255, 255, 0.1);
             --text-primary: #ffffff;
             --text-secondary: #cccccc;
 
-            /* Monochrome Palette */
-            --q-mono-white: #ffffff;
-            --q-mono-grey: #888888;
-            --q-mono-light: #eeeeee;
+            /* Quantum Palette */
+            --q-cyan: #00FFFF;
+            --q-magenta: #FF00FF;
+            --q-yellow: #FFFF00;
         }
 
         /* High Contrast Overrides */
@@ -49,7 +49,6 @@
             color: var(--text-primary);
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             overflow: hidden;
-            /* Prevent body scroll, handled by containers */
             margin: 0;
             height: 100vh;
         }
@@ -74,7 +73,7 @@
         /* SIDEBAR (Config) */
         .sidebar-panel {
             width: 320px;
-            background: rgba(5, 5, 5, 0.9);
+            background: rgba(10, 10, 10, 0.9);
             backdrop-filter: blur(20px);
             border-right: 1px solid var(--border-color);
             display: flex;
@@ -95,7 +94,7 @@
             font-size: 1rem;
             font-weight: 700;
             letter-spacing: 2px;
-            color: var(--q-mono-white);
+            color: var(--q-yellow);
             text-transform: uppercase;
         }
 
@@ -105,22 +104,21 @@
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid var(--border-color);
             color: #fff;
-            border-radius: 0;
-            /* Square borders for monochrome look */
+            border-radius: 4px;
         }
 
         .form-control:focus,
         .form-select:focus {
             background: rgba(255, 255, 255, 0.1);
-            border-color: var(--q-mono-white);
+            border-color: var(--q-yellow);
             color: #fff;
-            box-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
+            box-shadow: 0 0 10px rgba(255, 255, 0, 0.2);
         }
 
         .input-group-text {
             background: rgba(255, 255, 255, 0.1);
             border: 1px solid var(--border-color);
-            color: var(--q-mono-white);
+            color: var(--q-yellow);
         }
 
         /* CHAT AREA */
@@ -148,10 +146,10 @@
             letter-spacing: 1px;
             padding: 4px 12px;
             border-radius: 20px;
-            background: rgba(255, 255, 255, 0.1);
-            color: var(--q-mono-white);
-            border: 1px solid var(--q-mono-white);
-            box-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
+            background: rgba(0, 255, 255, 0.1);
+            color: var(--q-cyan);
+            border: 1px solid var(--q-cyan);
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.2);
             display: flex;
             align-items: center;
         }
@@ -174,8 +172,7 @@
         .input-capsule {
             background: rgba(20, 20, 20, 0.9);
             border: 1px solid var(--border-color);
-            border-radius: 0;
-            /* Square look */
+            border-radius: 12px;
             padding: 0.75rem 1.5rem;
             display: flex;
             align-items: center;
@@ -184,7 +181,7 @@
         }
 
         .input-capsule:focus-within {
-            border-color: var(--q-mono-white);
+            border-color: var(--q-yellow);
             background: rgba(30, 30, 30, 0.9);
         }
 
@@ -200,10 +197,9 @@
         .send-btn-circle {
             width: 50px;
             height: 50px;
-            border-radius: 0;
-            /* Square button */
-            border: 1px solid var(--q-mono-white);
-            background: var(--q-mono-white);
+            border-radius: 50%;
+            border: none;
+            background: var(--q-yellow);
             color: #000;
             display: flex;
             align-items: center;
@@ -214,9 +210,8 @@
         }
 
         .send-btn-circle:hover {
-            background: #000;
-            color: #fff;
-            box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
+            transform: scale(1.1);
+            box-shadow: 0 0 20px rgba(255, 255, 0, 0.4);
         }
 
         /* RECOMMENDATIONS */
@@ -240,20 +235,23 @@
             }
         }
 
-        /* Override Bootstrap styles for monochrome */
-        .btn-outline-secondary {
-            border-color: var(--border-color);
-            color: var(--text-secondary);
+        /* Custom Styles */
+        .btn-outline-quantum {
+            border: 1px solid var(--q-yellow);
+            color: var(--q-yellow);
+            background: transparent;
+            transition: all 0.3s;
         }
 
-        .btn-outline-secondary:hover {
-            background: var(--text-primary);
+        .btn-outline-quantum:hover {
+            background: var(--q-yellow);
             color: #000;
+            box-shadow: 0 0 15px rgba(255, 255, 0, 0.4);
         }
 
         .form-check-input:checked {
-            background-color: var(--q-mono-white);
-            border-color: var(--q-mono-white);
+            background-color: var(--q-yellow);
+            border-color: var(--q-yellow);
         }
     </style>
 </head>
@@ -267,12 +265,12 @@
         <aside class="sidebar-panel" id="sidebarPanel">
             <div class="sidebar-header d-flex align-items-center justify-content-between">
                 <div class="d-flex align-items-center gap-2">
-                    <i class="bi bi-cpu fs-4" style="color: var(--q-mono-white);"></i>
-                    <span class="brand-text">Stream Config</span>
+                    <i class="bi bi-cpu fs-4" style="color: var(--q-yellow);"></i>
+                    <span class="brand-text">Quantum Stream</span>
                 </div>
                 <!-- Back to Home -->
                 <a href="index.html" class="btn btn-sm btn-outline-secondary"
-                    style="width: 32px; height: 32px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 0;">
+                    style="width: 32px; height: 32px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 8px;">
                     <i class="bi bi-house"></i>
                 </a>
             </div>
@@ -280,11 +278,11 @@
             <div class="sidebar-content">
                 <!-- Agent Selection -->
                 <div class="mb-4">
-                    <label class="small text-uppercase mb-2 text-primary">Target Node</label>
+                    <label class="small text-uppercase mb-2 text-yellow">Target Node</label>
                     <select class="form-select form-control mb-2 bg-dark text-white border-secondary" id="agent-select">
                         <option value="">Scanning network...</option>
                     </select>
-                    <button id="get-agent-info" class="btn btn-sm btn-outline-light w-100 rounded-0">
+                    <button id="get-agent-info" class="btn btn-sm btn-outline-quantum w-100 rounded-3">
                         <i class="bi bi-info-circle me-1"></i> INSPECT NODE
                     </button>
                     <div id="agent-info-container" class="mt-2 small text-secondary"></div>
@@ -292,12 +290,12 @@
 
                 <!-- Session Settings -->
                 <div class="mb-4">
-                    <label class="small text-uppercase mb-2 text-primary">Session Parameters</label>
+                    <label class="small text-uppercase mb-2 text-yellow">Session Parameters</label>
 
                     <div class="mb-3">
                         <label class="form-label small text-secondary">Thread Hash</label>
                         <div class="input-group">
-                            <span class="input-group-text rounded-0"><i class="bi bi-hash"></i></span>
+                            <span class="input-group-text"><i class="bi bi-hash"></i></span>
                             <input type="text" class="form-control" id="thread-id" value="1">
                         </div>
                     </div>
@@ -331,21 +329,21 @@
 
                 <!-- Advanced context -->
                 <div class="mb-3">
-                    <label class="small text-uppercase mb-2 text-primary">System Override</label>
+                    <label class="small text-uppercase mb-2 text-yellow">System Override</label>
                     <textarea class="form-control" id="agent-context" rows="3"
                         placeholder="Inject protocol override..."></textarea>
                 </div>
 
                 <!-- Agent Style -->
                 <div class="mb-3">
-                    <label class="small text-uppercase mb-2 text-primary">Persona Mod</label>
+                    <label class="small text-uppercase mb-2 text-yellow">Persona Mod</label>
                     <input type="text" class="form-control" id="agent-style" placeholder="e.g. analytical, rogue">
                 </div>
             </div>
 
             <div class="mt-auto pt-4">
-                <button id="update-settings" class="btn w-100 fw-bold rounded-0"
-                    style="background: var(--q-mono-white); color: #000; letter-spacing: 1px;">
+                <button id="update-settings" class="btn w-100 fw-bold rounded-3"
+                    style="background: var(--q-yellow); color: #000; letter-spacing: 1px;">
                     <i class="bi bi-check2-circle me-2"></i>APPLY CONFIG
                 </button>
             </div>
@@ -362,9 +360,8 @@
                     <div>
                         <h5 class="mb-0 fw-bold text-white text-uppercase" style="letter-spacing: 2px;">Data Stream</h5>
                         <div class="d-flex align-items-center gap-2 mt-1">
-                            <!-- Added ID="current-status" here to fix JS error -->
                             <span id="current-status" class="status-badge">
-                                <span class="spinner-grow spinner-grow-sm me-2 bg-white"
+                                <span class="spinner-grow spinner-grow-sm me-2 bg-cyan"
                                     style="width: 6px; height: 6px;"></span>
                                 UPLINK ACTIVE
                             </span>
@@ -372,7 +369,7 @@
                     </div>
                 </div>
 
-                <button id="clear-response" class="btn btn-sm btn-outline-light px-3 rounded-0"
+                <button id="clear-response" class="btn btn-sm btn-outline-danger px-3 rounded-pill"
                     style="font-size: 0.75rem; letter-spacing: 1px;">
                     <i class="bi bi-trash3 me-1"></i> PURGE LOGS
                 </button>
@@ -380,32 +377,20 @@
 
             <!-- Chat Messages (Scrollable) -->
             <div id="chat-container" class="d-flex flex-column gap-3">
-                <!-- Welcome Message -->
                 <div class="d-flex flex-column align-items-center justify-content-center h-100 opacity-25">
-                    <i class="bi bi-code-square fs-1 mb-3" style="color: var(--q-mono-white);"></i>
+                    <i class="bi bi-cpu display-4 mb-3 text-yellow"></i>
                     <p class="text-white text-uppercase" style="letter-spacing: 2px;">Awaiting Neural Data</p>
                 </div>
             </div>
 
-            <!-- Tool Status Overlay (Floating) -->
-            <div id="tool-status-container" class="position-absolute top-0 end-0 m-3"
-                style="width: 300px; max-height: 200px; overflow-y: auto; z-index: 20; pointer-events: none;"></div>
-
             <!-- Input Area -->
             <div class="chat-input-wrapper">
-                <!-- Recommendations Chips -->
-                <div id="recommendation-chips-container" class="d-flex flex-wrap gap-2 mb-3 px-2"
-                    style="display: none !important;">
-                    <!-- Chips will be injected here -->
-                </div>
-
-                <!-- Image Preview -->
                 <div id="image-preview"
                     class="position-absolute bottom-100 start-0 mb-2 ms-4 p-2 shadow-2xl border border-secondary"
-                    style="display: none; z-index: 30; background: rgba(0,0,0,0.9);">
+                    style="display: none; z-index: 30; background: rgba(0,0,0,0.9); border-radius: 8px;">
                     <div class="position-relative">
                         <img id="preview-image" src="#" alt="Preview"
-                            style="height: 80px; width: auto; border-radius: 0;">
+                            style="height: 80px; width: auto; border-radius: 4px;">
                         <button id="remove-image"
                             class="btn btn-danger btn-sm p-0 rounded-circle position-absolute top-0 end-0 translate-middle"
                             style="width: 20px; height: 20px;">
@@ -416,12 +401,10 @@
 
                 <div class="d-flex gap-3 align-items-center">
                     <div class="input-capsule flex-grow-1">
-                        <!-- Image Upload Button -->
                         <label
                             class="btn btn-link text-secondary p-0 d-flex align-items-center justify-content-center me-3"
-                            style="width: 32px; height: 32px; cursor: pointer; transition: color 0.3s;"
-                            title="Upload Visual Data">
-                            <i class="bi bi-image fs-5 text-white"></i>
+                            style="width: 32px; height: 32px; cursor: pointer;" title="Upload Visual Data">
+                            <i class="bi bi-image fs-5 text-yellow"></i>
                             <input type="file" id="image-upload" accept="image/*" style="display: none;">
                         </label>
 
@@ -433,16 +416,9 @@
                         <i class="bi bi-send-fill" style="margin-left: 3px;"></i>
                     </button>
                 </div>
-                <div class="text-center mt-2">
-                    <small class="text-secondary" style="font-size: 0.7rem; letter-spacing: 1px;">MULTIMODAL PROTOCOL ::
-                        ENABLED</small>
-                </div>
             </div>
         </main>
     </div>
-
-    <!-- Notification Container -->
-    <div id="notification-container" class="position-fixed bottom-0 end-0 p-3" style="z-index: 1050"></div>
 
     <!-- Scripts -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
@@ -452,11 +428,10 @@
     <script src="js/agent-invoke-stream.js"></script>
 
     <script>
-        // --- THREE.JS BINARY RAIN (MONOCHROME) ---
         const initThreeBg = () => {
             const container = document.getElementById('canvas-bg');
             const scene = new THREE.Scene();
-            scene.fog = new THREE.FogExp2(0x000000, 0.05); // More fog for depth
+            scene.fog = new THREE.FogExp2(0x050505, 0.05);
             const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
             camera.position.z = 100;
 
@@ -464,18 +439,17 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
             container.appendChild(renderer.domElement);
 
-            // Create textures for '0' and '1'
             const createCharTexture = (char) => {
                 const canvas = document.createElement('canvas');
                 canvas.width = 64;
                 canvas.height = 64;
                 const ctx = canvas.getContext('2d');
                 ctx.font = 'bold 48px sans-serif';
-                ctx.fillStyle = '#ffffff';
+                ctx.fillStyle = '#FFFF00';
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
                 ctx.fillText(char, 32, 32);
-                const texture = new THREE.CanvasTexture(canvas);
+                return new THREE.CanvasTexture(canvas);
             };
 
             const texture0 = createCharTexture('0');
@@ -490,52 +464,30 @@
             for (let i = 0; i < particleCount; i++) {
                 const material = new THREE.SpriteMaterial({
                     map: Math.random() > 0.5 ? texture1 : texture0,
-                    color: 0xffffff,
+                    color: 0xffff00,
                     transparent: true,
-                    opacity: Math.random() * 0.5 + 0.1, // Variation in opacity
+                    opacity: Math.random() * 0.5 + 0.1,
                 });
 
                 const sprite = new THREE.Sprite(material);
-
-                // Random position
                 sprite.position.x = (Math.random() - 0.5) * 400;
                 sprite.position.y = (Math.random() - 0.5) * 400;
                 sprite.position.z = (Math.random() - 0.5) * 200;
-
-                // Random scale
                 const scale = Math.random() * 2 + 1;
                 sprite.scale.set(scale, scale, 1);
-
                 group.add(sprite);
-
-                particlesData.push({
-                    sprite: sprite,
-                    speed: Math.random() * 0.5 + 0.2, // Fall speed
-                    yReset: 200 // Y height to reset to
-                });
+                particlesData.push({ sprite, speed: Math.random() * 0.5 + 0.2 });
             }
 
             const animate = () => {
                 requestAnimationFrame(animate);
-
                 particlesData.forEach(data => {
                     data.sprite.position.y -= data.speed;
-
-                    // Reset if too low
                     if (data.sprite.position.y < -200) {
-                        data.sprite.position.y = data.yReset;
-                        data.sprite.position.x = (Math.random() - 0.5) * 400; // New X pos
-                    }
-
-                    // Optional: Flicker effect
-                    if (Math.random() > 0.95) {
-                        data.sprite.material.opacity = Math.random() * 0.5 + 0.1;
+                        data.sprite.position.y = 200;
+                        data.sprite.position.x = (Math.random() - 0.5) * 400;
                     }
                 });
-
-                // Slowly rotate structure for 3D feel
-                // group.rotation.y += 0.0005;
-
                 renderer.render(scene, camera);
             };
             animate();
@@ -547,15 +499,6 @@
             });
         };
         initThreeBg();
-
-        // Mobile Sidebar Toggle
-        const toggleBtn = document.getElementById('toggleSidebar');
-        const sidebar = document.getElementById('sidebarPanel');
-        if (toggleBtn) {
-            toggleBtn.addEventListener('click', () => {
-                sidebar.classList.toggle('show');
-            });
-        }
     </script>
 </body>
 

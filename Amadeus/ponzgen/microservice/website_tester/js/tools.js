@@ -167,40 +167,40 @@ async function loadToolDetails(toolId) {
         let detailsHtml = `
              <div class="mb-4">
                  <div class="d-flex align-items-center mb-3">
-                    <div class="icon-box bg-light text-success rounded-circle me-3" style="width: 48px; height: 48px;">
-                        <i class="bi bi-tools fs-4"></i>
+                    <div class="icon-box bg-dark text-white rounded-circle me-3" style="width: 48px; height: 48px; border: 1px solid var(--q-magenta); display: flex; align-items: center; justify-content: center;">
+                        <i class="bi bi-tools fs-4" style="color: var(--q-magenta); text-shadow: 0 0 10px var(--q-magenta);"></i>
                     </div>
                     <div>
-                        <h5 class="fw-bold mb-0 text-break">${tool.name}</h5>
-                        <span class="text-xs text-muted font-monospace">${tool.tool_id}</span>
+                        <h5 class="fw-bold mb-0 text-break text-white">${tool.name}</h5>
+                        <span class="text-xs text-secondary font-monospace" style="opacity: 0.6;">${tool.tool_id}</span>
                     </div>
                 </div>
 
-                <div class="p-3 bg-light rounded border border-light mb-3">
-                    <label class="text-xs fw-bold text-uppercase text-muted mb-1">Function</label>
-                    <p class="text-sm mb-0">${tool.description || 'No description available.'}</p>
+                <div class="p-3 bg-dark bg-opacity-50 rounded border border-secondary mb-3">
+                    <label class="text-xs fw-bold text-uppercase text-secondary mb-1" style="font-size: 0.7rem; letter-spacing: 1px;">Function</label>
+                    <p class="text-sm mb-0 text-white">${tool.description || 'No description available.'}</p>
                 </div>
 
                  <div class="row g-2 mb-3">
                     <div class="col-6">
-                        <div class="p-2 border rounded text-center">
-                            <span class="d-block text-xs text-muted">Status</span>
-                            <span class="fw-bold ${tool.on_status === 'Online' ? 'text-success' : 'text-danger'}">
+                        <div class="p-2 border border-secondary rounded text-center bg-dark bg-opacity-25">
+                            <span class="d-block text-xs text-secondary" style="font-size: 0.65rem; text-transform: uppercase;">Status</span>
+                            <span class="fw-bold" style="color: ${tool.on_status === 'Online' ? 'var(--q-magenta)' : 'var(--text-secondary)'};">
                                 ${tool.on_status}
                             </span>
                         </div>
                     </div>
                      <div class="col-6">
-                        <div class="p-2 border rounded text-center">
-                            <span class="d-block text-xs text-muted">Ownership</span>
-                            <span class="fw-bold text-dark">
+                        <div class="p-2 border border-secondary rounded text-center bg-dark bg-opacity-25">
+                            <span class="d-block text-xs text-secondary" style="font-size: 0.65rem; text-transform: uppercase;">Ownership</span>
+                            <span class="fw-bold text-white">
                                 ${tool.company_id ? 'Corporate' : 'Personal'}
                             </span>
                         </div>
                     </div>
                 </div>
             
-                <h6 class="fw-bold mt-4 mb-3 border-bottom pb-2">Version History</h6>
+                <h6 class="fw-bold mt-4 mb-3 border-bottom border-secondary pb-2 text-white" style="font-size: 0.85rem; letter-spacing: 1px; text-transform: uppercase;">Version History</h6>
         `;
 
         if (tool.versions && tool.versions.length > 0) {
@@ -211,27 +211,27 @@ async function loadToolDetails(toolId) {
                 const accordionId = `version-${index}`;
 
                 detailsHtml += `
-                    <div class="accordion-item border rounded mb-2">
+                    <div class="accordion-item border border-secondary rounded mb-2 bg-transparent">
                         <h2 class="accordion-header">
-                            <button class="accordion-button ${index > 0 ? 'collapsed' : ''} py-2 bg-light rounded" type="button" data-bs-toggle="collapse" data-bs-target="#${accordionId}">
-                                <span class="fw-bold me-2">v${version.version}</span>
-                                <span class="text-muted text-xs">Port: ${releasedData.port || 'Auto'}</span>
+                            <button class="accordion-button ${index > 0 ? 'collapsed' : ''} py-2 bg-dark bg-opacity-75 text-white rounded" type="button" data-bs-toggle="collapse" data-bs-target="#${accordionId}">
+                                <span class="fw-bold me-2 text-magenta">v${version.version}</span>
+                                <span class="text-secondary text-xs">Port: ${releasedData.port || 'Auto'}</span>
                             </button>
                         </h2>
                         <div id="${accordionId}" class="accordion-collapse collapse ${index === 0 ? 'show' : ''}" data-bs-parent="#versionsAccordion">
-                            <div class="accordion-body p-3">
+                            <div class="accordion-body p-3 bg-dark bg-opacity-50">
                                 <div class="mb-2">
-                                    <label class="text-xs fw-bold text-muted">Method</label>
-                                    <div class="text-sm font-monospace bg-light p-1 rounded">${releasedData.method || 'N/A'}</div>
+                                    <label class="text-xs fw-bold text-secondary text-uppercase">Method</label>
+                                    <div class="text-sm font-monospace bg-dark p-1 rounded border border-secondary text-magenta">${releasedData.method || 'N/A'}</div>
                                 </div>
                                 <div class="mb-2">
-                                     <label class="text-xs fw-bold text-muted">Arguments</label>
-                                     <div class="text-sm font-monospace bg-light p-1 rounded text-break">${releasedData.args || 'None'}</div>
+                                     <label class="text-xs fw-bold text-secondary text-uppercase">Arguments</label>
+                                     <div class="text-sm font-monospace bg-dark p-1 rounded border border-secondary text-white text-break">${releasedData.args || 'None'}</div>
                                 </div>
                                 
                                 <div class="mb-2">
-                                     <label class="text-xs fw-bold text-muted">Environment Config</label>
-                                     <pre class="bg-dark text-white p-2 rounded text-xs mb-0" style="max-height: 100px;">${JSON.stringify(releasedData.env || {}, null, 2)}</pre>
+                                     <label class="text-xs fw-bold text-secondary text-uppercase">Environment Config</label>
+                                     <pre class="bg-black text-secondary p-2 rounded text-xs mb-0 border border-secondary" style="max-height: 100px;">${JSON.stringify(releasedData.env || {}, null, 2)}</pre>
                                 </div>
                             </div>
                         </div>
@@ -241,14 +241,14 @@ async function loadToolDetails(toolId) {
 
             detailsHtml += '</div>'; // End accordion
         } else {
-            detailsHtml += '<p class="text-muted text-sm fst-italic">No version history available.</p>';
+            detailsHtml += '<p class="text-secondary text-sm fst-italic">No version history available.</p>';
         }
 
         // Add JSON representation
         detailsHtml += `
             <div class="mt-4">
-                 <label class="text-xs fw-bold text-uppercase text-muted mb-2">Raw Definition</label>
-                 <pre class="bg-light p-3 rounded border text-xs text-muted" style="max-height: 150px; overflow-y: auto;">${JSON.stringify(tool, null, 2)}</pre>
+                 <label class="text-xs fw-bold text-uppercase text-secondary mb-2">Raw Definition</label>
+                 <pre class="bg-black p-3 rounded border border-secondary text-xs text-secondary" style="max-height: 150px; overflow-y: auto;">${JSON.stringify(tool, null, 2)}</pre>
             </div>
         </div>`;
 

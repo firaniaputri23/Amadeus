@@ -158,33 +158,33 @@ async function loadAgentDetails(agentId) {
         let detailsHtml = `
             <div class="mb-4">
                  <div class="d-flex align-items-center mb-3">
-                    <div class="icon-box bg-light text-primary rounded-circle me-3" style="width: 48px; height: 48px;">
-                        <i class="bi bi-robot fs-4"></i>
+                    <div class="icon-box bg-dark text-white rounded-circle me-3" style="width: 48px; height: 48px; border: 1px solid var(--q-cyan); display: flex; align-items: center; justify-content: center;">
+                        <i class="bi bi-robot fs-4" style="color: var(--q-cyan); text-shadow: 0 0 10px var(--q-cyan);"></i>
                     </div>
                     <div>
-                        <h5 class="fw-bold mb-0">${agent.agent_name}</h5>
-                        <span class="text-xs text-muted">${agent.agent_id}</span>
+                        <h5 class="fw-bold mb-0 text-white">${agent.agent_name}</h5>
+                        <span class="text-xs text-secondary font-monospace" style="opacity: 0.6;">${agent.agent_id}</span>
                     </div>
                 </div>
                 
-                <div class="p-3 bg-light rounded border border-light mb-3">
-                    <label class="text-xs fw-bold text-uppercase text-muted mb-1">Description</label>
-                    <p class="text-sm mb-0">${agent.description || 'No description available.'}</p>
+                <div class="p-3 bg-dark bg-opacity-50 rounded border border-secondary mb-3">
+                    <label class="text-xs fw-bold text-uppercase text-secondary mb-1" style="font-size: 0.7rem; letter-spacing: 1px;">Description</label>
+                    <p class="text-sm mb-0 text-white">${agent.description || 'No description available.'}</p>
                 </div>
 
                 <div class="row g-2 mb-3">
                     <div class="col-6">
-                        <div class="p-2 border rounded text-center">
-                            <span class="d-block text-xs text-muted">Status</span>
-                            <span class="fw-bold ${agent.on_status ? 'text-success' : 'text-danger'}">
+                        <div class="p-2 border border-secondary rounded text-center bg-dark bg-opacity-25">
+                            <span class="d-block text-xs text-secondary" style="font-size: 0.65rem; text-transform: uppercase;">Status</span>
+                            <span class="fw-bold" style="color: ${agent.on_status ? 'var(--q-cyan)' : 'var(--text-secondary)'};">
                                 ${agent.on_status ? 'Active' : 'Inactive'}
                             </span>
                         </div>
                     </div>
                      <div class="col-6">
-                        <div class="p-2 border rounded text-center">
-                            <span class="d-block text-xs text-muted">Scope</span>
-                            <span class="fw-bold text-dark">
+                        <div class="p-2 border border-secondary rounded text-center bg-dark bg-opacity-25">
+                            <span class="d-block text-xs text-secondary" style="font-size: 0.65rem; text-transform: uppercase;">Scope</span>
+                            <span class="fw-bold text-white">
                                 ${agent.company_id ? 'Corporate' : 'Personal'}
                             </span>
                         </div>
@@ -192,12 +192,12 @@ async function loadAgentDetails(agentId) {
                 </div>
 
                 <div class="mb-3">
-                     <label class="text-xs fw-bold text-uppercase text-muted mb-1">Personality Profile</label>
-                     <p class="text-sm text-muted fst-italic bg-light p-2 rounded">"${agent.agent_style || 'Default style'}"</p>
+                     <label class="text-xs fw-bold text-uppercase text-secondary mb-1" style="font-size: 0.7rem; letter-spacing: 1px;">Personality Profile</label>
+                     <p class="text-sm text-secondary fst-italic bg-black bg-opacity-50 p-2 rounded border border-secondary">"${agent.agent_style || 'Default style'}"</p>
                 </div>
                 
                 <div class="d-grid gap-2">
-                    <button class="btn btn-primary btn-sm add-tool-trigger" data-id="${agent.agent_id}">
+                    <button class="btn btn-quantum btn-sm add-tool-trigger" data-id="${agent.agent_id}">
                         <i class="bi bi-plus-circle me-1"></i> Assign New Tool
                     </button>
                 </div>
@@ -237,14 +237,14 @@ function loadAgentTools(agentId, tools) {
 
     tools.forEach(tool => {
         toolsHtml += `
-            <div class="d-flex align-items-center justify-content-between p-2 bg-white border rounded">
+            <div class="d-flex align-items-center justify-content-between p-2 bg-dark bg-opacity-40 border border-secondary rounded mb-2">
                 <div class="d-flex align-items-center overflow-hidden">
-                    <div class="icon-box bg-success-soft text-success rounded me-2" style="width: 32px; height: 32px; font-size: 0.9rem; flex-shrink: 0;">
-                        <i class="bi bi-tools"></i>
+                    <div class="icon-box bg-dark rounded me-2 border border-secondary" style="width: 32px; height: 32px; font-size: 0.9rem; flex-shrink: 0; display: flex; align-items: center; justify-content: center;">
+                        <i class="bi bi-tools" style="color: var(--q-cyan);"></i>
                     </div>
                     <div class="text-truncate">
-                        <h6 class="mb-0 text-sm fw-bold text-truncate">${tool.name}</h6>
-                        <small class="text-xs text-muted text-truncate d-block">${tool.description || 'No description'}</small>
+                        <h6 class="mb-0 text-sm fw-bold text-truncate text-white">${tool.name}</h6>
+                        <small class="text-xs text-secondary text-truncate d-block" style="opacity: 0.7;">${tool.description || 'No description'}</small>
                     </div>
                 </div>
                 <button class="btn btn-link text-danger p-1 remove-tool" data-tool-id="${tool.tool_id}" title="Remove Tool">

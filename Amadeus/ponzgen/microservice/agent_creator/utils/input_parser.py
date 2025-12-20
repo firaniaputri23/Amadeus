@@ -108,19 +108,23 @@ class InputParser:
         # Replace smart double quotes with standard double quote
         content = content.replace('“', '"').replace('”', '"')
         
-        # Replace smart single quotes with STANDARD DOUBLE QUOTE (JSON requires double quotes)
+        # Replace smart single quotes with STANDARD DOUBLE QUOTE
         content = content.replace("‘", '"').replace("’", '"')
         
-        # Replace straight single quotes with double quotes? 
-        # Risky inside text, but necessary if keys are using single quotes.
-        # Let's try to target keys specifically? No, unsafe.
-        # Ideally we only do this if json.loads fails, but let's stick to the observed smart quotes first.
+        # Replace common JSON-breaking characters
+        content = content.replace('\xa0', ' ') # Non-breaking space
+        
+        # Handle cases where keys are single-quoted or unquoted (common in lazy LLM outputs)
+        # 1. Single-quoted keys: 'key': -> "key":
+        content = re.sub(r"'(\w+)':", r'"\1":', content)
+        # 2. Unquoted keys: { key: -> { "key": 
+        content = re.sub(r"([{,]\s*)(\w+):", r'\1"\2":', content)
+        # 3. Double-quoted values that use single quotes internally (already fine, but let's be careful)
         
         # Remove trailing commas (e.g. "key": "val", } -> "key": "val" })
         content = re.sub(r',\s*([}\]])', r'\1', content)
         
-        # Remove markdown escaping for underscores (e.g. agent\_count -> agent_count)
-        # This is common with some models that try to "markdown-safe" the JSON keys
+        # Remove markdown escaping for underscores
         content = content.replace(r'\_', '_')
         
         return content
@@ -157,10 +161,15 @@ class InputParser:
         
         # Try finding the largest outer bracket pair as a fallback
         try:
+            # Look for everything between the first '{' and the last '}'
             start_idx = response_content.find('{')
             end_idx = response_content.rfind('}')
             if start_idx != -1 and end_idx != -1 and end_idx > start_idx:
                 json_str = response_content[start_idx:end_idx+1]
+                # A final attempt to fix single quotes in the extracted block
+                # but ONLY if double quotes aren't being used for keys
+                if '"' not in json_str or (json_str.find("'") < json_str.find('"') and "'" in json_str):
+                    json_str = json_str.replace("'", '"')
                 return json.loads(json_str)
         except (json.JSONDecodeError, ValueError):
             pass
@@ -385,14 +394,27 @@ async def extract_fields_from_input_stream(
 
             # Process all extracted fields
             for field, field_value in extracted_data.items():
-                if field_value and field_value != partial_result.get(field, ""):
+                # Yield if we have a value and it's different from what we last yielded
+                # We yield even for empty strings if the field was previously unknown
+                if field_value is not None and field_value != partial_result.get(field):
                     partial_result[field] = field_value
                     # Yield an update for this field
-                    print(f"DEBUG Stream: Yielding field {field}")
+                    logger.info(f"Yielding field update: {field}")
                     yield {field: field_value}
         
-        # Final yield with all fields
-        yield partial_result
+        # Final safety yield - ensure we send everything we have at the end
+        if partial_result:
+            logger.info(f"Final yield of {len(partial_result)} fields")
+            yield partial_result
+        else:
+            # If we still have nothing, try one last aggressive parse of the full content
+            last_ditch_result = InputParser._parse_json_from_response(accumulated_content)
+            if last_ditch_result:
+                logger.info(f"Last ditch extraction successful: {list(last_ditch_result.keys())}")
+                yield last_ditch_result
+            else:
+                logger.warning("All extraction attempts failed for stream.")
+                yield {}
             
     except Exception as e:
         print(f"Error streaming field extraction: {str(e)}")
