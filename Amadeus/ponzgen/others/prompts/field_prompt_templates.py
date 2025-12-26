@@ -44,9 +44,12 @@ def construct_system_prompt(
     
     system_prompt += "\n### Instructions ###\n"
     system_prompt += (
-        "- Ensure logical consistency with the given data.\n"
-        "- Output ONLY the completed field value (direct to answer, no JSON, '', or structured format).\n"
-        f"- **Description of this field. You can enhance the result based on here.**: {target_field_desc}\n"
+        "- Analyze the provided Context (especially Agent Name and Description) to determine the appropriate personality.\n"
+        "- Generate a rich, descriptive personality matrix (tone, behavior, speech patterns, quirks) that strictly fits the agent's identity.\n"
+        "- The output should be a detailed paragraph, NOT a single word like 'Professional'.\n"
+        "- Create a unique voice for the agent.\n"
+        "- Output ONLY the completed field value (direct to text, no JSON or markdown wrapping).\n"
+        f"- **Field Definition**: {target_field_desc}\n"
     )
     
     print(system_prompt)

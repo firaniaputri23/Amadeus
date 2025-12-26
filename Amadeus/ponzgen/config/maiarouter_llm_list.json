@@ -1,0 +1,107 @@
+{
+  "available_models": [
+    "custom-vlm",
+    "maia/gemini-2.5-flash",
+    "anthropic/claude-3-7-sonnet-latest",
+    "anthropic/claude-haiku-4-5",
+    "openai/gpt-5-pro",
+    "maia/gemini-2.5-pro",
+    "maia/gemini-3-pro-preview",
+    "openai/gpt-3.5-turbo",
+    "openai/gpt-4",
+    "moonshot/kimi-k2-0711-preview",
+    "moonshot/kimi-k2-thinking"
+  ],
+  "model_info": {
+    "custom-vlm": {
+      "provider": "local",
+      "description": "Local Gemma-2-2b + CLIP vision model",
+      "tool_calling": false,
+      "vision": false,
+      "cost": "free (local)"
+    },
+    "maia/gemini-2.5-flash": {
+      "provider": "maiarouter",
+      "description": "Gemini 2.5 Flash - High speed, low latency",
+      "tool_calling": true,
+      "vision": true,
+      "cost": "Paid/Free Tier"
+    },
+    "anthropic/claude-3-7-sonnet-latest": {
+      "provider": "maiarouter",
+      "description": "Claude 3.7 Sonnet - State of the art balance",
+      "tool_calling": true,
+      "vision": true,
+      "cost": "Paid"
+    },
+    "anthropic/claude-haiku-4-5": {
+      "provider": "maiarouter",
+      "description": "Claude Haiku 4.5 - Fast and smart",
+      "tool_calling": true,
+      "vision": true,
+      "cost": "Paid"
+    },
+    "openai/gpt-5-pro": {
+      "provider": "maiarouter",
+      "description": "GPT-5 Pro - Ultimate reasoning",
+      "tool_calling": true,
+      "vision": true,
+      "cost": "Paid"
+    },
+    "maia/gemini-2.5-pro": {
+      "provider": "maiarouter",
+      "description": "Gemini 2.5 Pro - Balanced performance",
+      "tool_calling": true,
+      "vision": true,
+      "cost": "Paid"
+    },
+    "maia/gemini-3-pro-preview": {
+      "provider": "maiarouter",
+      "description": "Gemini 3 Pro Preview - Next gen capabilities",
+      "tool_calling": true,
+      "vision": true,
+      "cost": "Paid"
+    },
+    "openai/gpt-3.5-turbo": {
+      "provider": "maiarouter",
+      "description": "GPT-3.5 Turbo - Fast and cost-effective",
+      "tool_calling": true,
+      "vision": false,
+      "cost": "Paid"
+    },
+    "openai/gpt-4": {
+      "provider": "maiarouter",
+      "description": "GPT-4 - High capability reasoning model",
+      "tool_calling": true,
+      "vision": false,
+      "cost": "Paid"
+    },
+    "moonshot/kimi-k2-0711-preview": {
+      "provider": "maiarouter",
+      "description": "Kimi K2 Preview - Cost effective efficient model",
+      "tool_calling": true,
+      "vision": false,
+      "cost": "Paid ($0.60/1M)"
+    },
+    "moonshot/kimi-k2-thinking": {
+      "provider": "maiarouter",
+      "description": "Kimi K2 Thinking - Specialized in reasoning",
+      "tool_calling": true,
+      "vision": false,
+      "cost": "Paid ($0.60/1M)"
+    }
+  },
+  "recommendations": {
+    "vision_tasks": "maia/gemini-2.5-flash",
+    "tool_calling_free": "maia/gemini-2.5-flash",
+    "tool_calling_paid": "maia/gemini-2.5-flash",
+    "best_balance": "anthropic/claude-3-7-sonnet-latest",
+    "budget_friendly": "maia/gemini-2.5-flash",
+    "most_capable": "openai/gpt-5-pro",
+    "default_for_mcp": "maia/gemini-2.5-flash"
+  },
+  "free_tier_info": {
+    "description": "MaiaRouter offers competitive pricing",
+    "note": "Check MaiaRouter dashboard for latest free tier availability."
+  }
+}

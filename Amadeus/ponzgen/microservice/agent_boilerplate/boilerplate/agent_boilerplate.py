@@ -388,6 +388,15 @@ class AgentBoilerplate:
         """
         Invoke an agent with the provided input (stream mode).
         """
+        import time
+        from langchain.callbacks.base import BaseCallbackHandler
+        from langchain_core.runnables import RunnableConfig
+
+        # Start timing the entire lifecycle
+        start_time = time.time()
+        agent_creation_start = 0
+        agent_creation_end = 0
+
         # Step 1: Prepare query and configuration
         query, config = self.parse_agent_input(agent_input, agent_config)
         print(query, config)
@@ -423,6 +432,7 @@ class AgentBoilerplate:
         # Determine if we should use ReAct text agent (for Gemma models)
         use_react_text = "gemma" in model_name.lower()
 
+        agent_creation_start = time.time()
         if has_tools:
             print("Using agent with tools")
             print("MCP config:", mcp_config)
@@ -448,6 +458,28 @@ class AgentBoilerplate:
         else:
             print("Using agent without tools")
             agent = get_react_agent(model_name=model_name, temperature=temperature, langchain_tools=[], memory=memory)
+        
+        agent_creation_end = time.time()
+
+        # Recursion tracker
+        class RecursionTracker(BaseCallbackHandler):
+            def __init__(self):
+                super().__init__()
+                self.count = 0
+            
+            def on_llm_start(self, *args, **kwargs):
+                self.count += 1
+
+        tracker = RecursionTracker()
+        
+        # Initialize Metrics
+        metrics = {
+            "model_init_time": 0,
+            "agent_init_time": 0,
+            "response_time": 0,
+            "recursion_count": 0
+        }
+
 
         try:
             # Step 7: Stream agent events
@@ -456,53 +488,84 @@ class AgentBoilerplate:
 
             yield f"event: status\ndata: {json.dumps({'status': 'Processing your request'})}\n\n"
 
-            async for event in agent.astream_events(query_input, invoke_config_with_callbacks, version="v2"):
-                kind = event["event"]
-                event_name = event.get("name", "unknown")
+            # 1. Model Init Time (Approximate as time before agent creation started)
+            metrics["model_init_time"] = agent_creation_start - start_time
+            
+            # 2. Agent Init Time (Time spent creating the agent/tools)
+            metrics["agent_init_time"] = agent_creation_end - agent_creation_start
 
-                if kind == "on_chat_model_start":
-                    yield f"event: status\ndata: {json.dumps({'status': 'Thinking...'})}\n\n"
+            start_response = time.time()
+            
+            # Update config with callbacks
+            invoke_config_with_callbacks["callbacks"].append(tracker)
+            invoke_config_with_callbacks["recursion_limit"] = 50
 
-                elif kind == "on_chat_model_stream":
-                    chunk = event.get("data", {}).get("chunk")
-                    content = chunk.content if isinstance(chunk, AIMessageChunk) and hasattr(chunk, 'content') else None
-                    if content:
-                        yield f"event: token\ndata: {json.dumps({'token': content})}\n\n"
+            try:
+                async for event in agent.astream_events(query_input, invoke_config_with_callbacks, version="v2"):
+                    try:
+                        kind = event["event"]
+                        event_name = event.get("name", "unknown")
 
-                elif kind == "on_llm_stream":
-                    chunk = event.get("data", {}).get("chunk")
-                    # For LLM stream, chunk is usually just the text string or a GenerationChunk
-                    content = chunk.text if hasattr(chunk, 'text') else str(chunk)
-                    if content:
-                        yield f"event: token\ndata: {json.dumps({'token': content})}\n\n"
+                        if kind == "on_chat_model_start":
+                            yield f"event: status\ndata: {json.dumps({'status': 'Thinking...'})}\n\n"
 
-                elif kind == "on_chat_model_end":
-                    yield f"event: status\ndata: {json.dumps({'status': 'Responding...'})}\n\n"
-                    output_message = event.get("data", {}).get("output")
-                    if output_message and hasattr(output_message, 'content'):
-                        final_answer_content = output_message.content
+                        elif kind == "on_chat_model_stream":
+                            chunk = event.get("data", {}).get("chunk")
+                            content = chunk.content if isinstance(chunk, AIMessageChunk) and hasattr(chunk, 'content') else None
+                            if content:
+                                yield f"event: token\ndata: {json.dumps({'token': content})}\n\n"
 
-                elif kind == "on_tool_start":
-                    tool_input = event.get('data', {}).get('input')
-                    tool_data = {
-                      "tool_name": event_name,
-                        "status": f"Start using MCP: {event_name}",
-                        "is_start": 1,
-                        "input": tool_input
-                    }
-                    yield f"event: tool_status\ndata: {json.dumps(tool_data, default=str)}\n\n"
+                        elif kind == "on_llm_stream":
+                            chunk = event.get("data", {}).get("chunk")
+                            # For LLM stream, chunk is usually just the text string or a GenerationChunk
+                            content = chunk.text if hasattr(chunk, 'text') else str(chunk)
+                            if content:
+                                yield f"event: token\ndata: {json.dumps({'token': content})}\n\n"
 
-                elif kind == "on_tool_end":
-                    tool_output = event.get('data', {}).get('output')
-                    tool_data = {
-                        "tool_name": event_name,
-                        "status": f"Finish using MCP: {event_name}",
-                        "is_start": 0,
-                        "output": tool_output
-                    }
-                    yield f"event: tool_status\ndata: {json.dumps(tool_data, default=str)}\n\n"
-                    # Add tool message to tool_messages list
-                    tool_messages.append(ToolMessage(content=str(tool_output), name=event_name, tool_call_id=uuid.uuid4()))
+                        elif kind == "on_chat_model_end":
+                            yield f"event: status\ndata: {json.dumps({'status': 'Responding...'})}\n\n"
+                            output_message = event.get("data", {}).get("output")
+                            if output_message and hasattr(output_message, 'content'):
+                                final_answer_content = output_message.content
+
+                        elif kind == "on_tool_start":
+                            tool_input = event.get('data', {}).get('input')
+                            tool_data = {
+                            "tool_name": event_name,
+                                "status": f"Start using MCP: {event_name}",
+                                "is_start": 1,
+                                "input": tool_input
+                            }
+                            yield f"event: tool_status\ndata: {json.dumps(tool_data, default=str)}\n\n"
+
+                        elif kind == "on_tool_end":
+                            tool_output = event.get('data', {}).get('output')
+                            tool_data = {
+                                "tool_name": event_name,
+                                "status": f"Finish using MCP: {event_name}",
+                                "is_start": 0,
+                                "output": tool_output
+                            }
+                            yield f"event: tool_status\ndata: {json.dumps(tool_data, default=str)}\n\n"
+                            # Add tool message to tool_messages list
+                            tool_messages.append(ToolMessage(content=str(tool_output), name=event_name, tool_call_id=uuid.uuid4()))
+                    except Exception as inner_e:
+                        print(f"Error processing individual event: {inner_e}")
+                        continue
+                
+                # Calculate final metrics
+                metrics["response_time"] = time.time() - start_response
+                metrics["recursion_count"] = tracker.count
+                
+                # Send metrics event
+                yield f"event: metrics\ndata: {json.dumps(metrics)}\n\n"
+
+            except Exception as e:
+                print(f"Error in agent stream: {e}")
+                error_msg = f"\n\n**Error during execution:** {str(e)}\n"
+                
+                yield f"event: token\ndata: {json.dumps({'token': error_msg})}\n\n"
+                yield f"event: status\ndata: {json.dumps({'status': 'Error Encountered'})}\n\n"
 
             # Signal end of execution
             end_data = {"status": "Agent Execution End"}

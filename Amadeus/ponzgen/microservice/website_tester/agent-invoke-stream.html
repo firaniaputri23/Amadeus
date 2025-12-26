@@ -546,13 +546,7 @@
                         </select>
                     </div>
 
-                    <div class="form-check form-switch mb-3">
-                        <input class="form-check-input bg-dark border-secondary" type="checkbox"
-                            id="chat-recommendation-toggle" checked>
-                        <label class="form-check-label small text-secondary" for="chat-recommendation-toggle">
-                            Neural Suggestions
-                        </label>
-                    </div>
+
 
                     <div class="form-check form-switch mb-2">
                         <input class="form-check-input bg-dark border-secondary" type="checkbox" id="reset-memory">
@@ -578,6 +572,45 @@
                 <div class="mb-4">
                     <label class="form-label">Persona Modulation</label>
                     <input type="text" class="form-control" id="agent-style" placeholder="e.g. professional, concise">
+                </div>
+
+                <!-- Tool Execution Log -->
+                <div class="mb-4">
+                    <label class="form-label d-flex justify-content-between align-items-center">
+                        Active Tools
+                        <span class="badge bg-dark border border-secondary text-secondary"
+                            style="font-size: 0.6rem;">LIVE</span>
+                    </label>
+                    <div id="tool-status-container" class="bg-black border border-secondary rounded p-2 text-monospace"
+                        style="font-family: 'Courier New', monospace; font-size: 0.65rem; height: 180px; overflow-y: auto; scrollbar-width: thin;">
+                        <div class="text-muted text-center opacity-25 mt-4">
+                            <i class="bi bi-terminal fs-4 d-block mb-1"></i>
+                            Waiting for signals...
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Performance Metrics -->
+                <div class="mb-4">
+                    <label class="form-label">Performance Metrics</label>
+                    <div id="metrics-container" class="bg-black border border-secondary rounded p-2">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="text-secondary small" style="font-size: 0.7rem;">Model Init:</span>
+                            <span class="text-white small fw-bold" id="metric-model-init">-</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="text-secondary small" style="font-size: 0.7rem;">Agent Init:</span>
+                            <span class="text-white small fw-bold" id="metric-agent-init">-</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="text-secondary small" style="font-size: 0.7rem;">Response Time:</span>
+                            <span class="text-white small fw-bold" id="metric-response-time">-</span>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span class="text-secondary small" style="font-size: 0.7rem;">Recursions:</span>
+                            <span class="text-white small fw-bold" id="metric-recursion">-</span>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -614,6 +647,8 @@
                 </div>
             </header>
 
+
+
             <!-- Chat Messages (Scrollable) -->
             <div id="chat-container">
                 <div class="h-100 d-flex flex-column align-items-center justify-content-center opacity-10">
@@ -625,7 +660,7 @@
             <!-- Input Area -->
             <div class="chat-input-wrapper">
                 <div class="input-container">
-                    <div id="recommendation-chips-container"></div>
+
 
                     <div id="image-preview"
                         class="position-absolute bottom-100 start-0 mb-3 ms-4 p-2 bg-dark border border-secondary"

@@ -569,7 +569,7 @@ class MCPAutoManager:
         for tool in parsed_tools:
             self.current_tools_signatures[tool['name']] = self._get_tool_signature(tool)
         
-        # self._kill_existing_mcp_processes()
+        self._kill_existing_mcp_processes()
         self._start_all_tools(parsed_tools)
         
         # Schedule periodic checks
@@ -582,7 +582,7 @@ class MCPAutoManager:
                 time.sleep(30)  # Check every 30 seconds for scheduled tasks
         except KeyboardInterrupt:
             print("\n⏹️  Auto management stopped")
-            # self._kill_existing_mcp_processes()
+            self._kill_existing_mcp_processes()
 
 
 def main():

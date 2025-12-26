@@ -58,6 +58,11 @@ Manages Model Context Protocol (MCP) tools:
 - Automatic tool refresh on startup
 - MCP proxy process management and status monitoring
 
+### 3. Model Support
+- **Local VLM**: Gemma 2 2B + CLIP (Runs on CPU/GPU)
+- **MaiaRouter**: Access to GPT-4, Claude 3, Llama 3 (requires API key)
+- **Local LLMs**: Integration with Ollama/LM Studio (planned)
+
 ### 4. Agent Field Autofill Service
 
 Provides automated field value generation for agent configuration:

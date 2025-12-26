@@ -41,7 +41,7 @@ from auth_middleware import AuthMiddleware
 from microservice.mcp_tools.routes.tools import router as tools_router
 from microservice.agent_backend.routes.agents import router as agents_router
 from microservice.agent_backend.routes.agent_logs import router as agent_logs_router
-from microservice.feature_sharing.routes.feature_sharing import router as feature_sharing_router
+from microservice.agent_backend.routes.agent_logs import router as agent_logs_router
 from microservice.agent_backend.routes.companies import router as companies_router
 from microservice.agent_backend.routes.roles import router as roles_router, initialize_roles
 
@@ -70,9 +70,6 @@ from microservice.agent_field_autofill.routes.autofill import router as agent_fi
 from microservice.agent_creator.routes.user_input_routes import router as agent_creator_user_input_router
 from microservice.agent_creator.routes.autofill import router as agent_creator_autofill_router
 
-# Import routes from chat_recommendation microservice
-# from microservice.chat_recommendation.routes.chat_recommendation_routes import router as chat_recommendation_router
-
 # Import routes from avatar_bucket microservice
 from microservice.avatar_bucket.routes.avatars import router as avatars_router
 
@@ -80,7 +77,7 @@ from microservice.avatar_bucket.routes.avatars import router as avatars_router
 from microservice.rag.routes.rag import router as rag_router
 
 # Import routes from sendgrid_webhook microservice
-from microservice.sendgrid_webhook.routes.webhook import router as sendgrid_webhook_router
+from microservice.rag.routes.rag import router as rag_router
 
 # Add microservice directory to Python path
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "microservice"))
@@ -132,7 +129,8 @@ ROUTERS = [
     tools_router,
     agents_router,
     agent_logs_router,
-    feature_sharing_router,
+    agents_router,
+    agent_logs_router,
     companies_router,
     roles_router,
     agent_invoke_router,
@@ -141,10 +139,9 @@ ROUTERS = [
     agent_field_autofill_router,
     agent_creator_user_input_router,
     agent_creator_autofill_router,
-    # chat_recommendation_router,  # Disabled
     avatars_router,
-    rag_router,
-    sendgrid_webhook_router
+    avatars_router,
+    rag_router
 ]
 
 # --- Custom Endpoint Override for Multimodal Invocation ---
@@ -378,7 +375,7 @@ async def list_models():
     Returns local and cloud models with their capabilities.
     """
     # Read from config file
-    config_path = BASE_DIR / "config" / "openrouter_llm_list.json"
+    config_path = BASE_DIR / "config" / "maiarouter_llm_list.json"
     try:
         with open(config_path, 'r', encoding='utf-8') as f:
             import json

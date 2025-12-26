@@ -86,70 +86,120 @@ function removeSelectedImage() {
 // Load available LLM models
 async function loadAvailableModels() {
     const modelSelect = document.getElementById('model-name');
-    
+
     try {
         // Fetch available models from the backend
         const response = await fetch(`${getInvokeApiUrl()}/get-llms`);
         const data = await response.json();
-        
+
         if (!data.available_models || data.available_models.length === 0) {
             modelSelect.innerHTML = '<option value="custom-vlm" selected>Custom VLM (Default)</option>';
             console.log('No models available from backend, using default');
             return;
         }
-        
-        // Build options from available models
-        let options = '';
-        
-        // Add model info if available
+
         const modelInfo = data.model_info || {};
-        
+
+        // Define Categories and Colors
+        const categories = {
+            'Anthropic': { prefix: ['anthropic/', 'maia/claude'], color: '#ff6b6b', models: [] }, // Red
+            'Deepseek': { prefix: ['deepseek/', 'maia/deepseek'], color: '#ffa500', models: [] },  // Orange
+            'Google': { prefix: ['maia/gemini', 'maia/google', 'google/', 'custom-vlm'], color: '#ffd700', models: [] },   // Yellow
+            'Mistral': { prefix: ['mistral/', 'maia/mistral'], color: '#4caf50', models: [] },    // Green
+            'Moonshot': { prefix: ['moonshot/', 'maia/moonshot'], color: '#e040fb', models: [] }, // Purple
+            'OpenAI': { prefix: ['openai/', 'maia/gpt', 'maia/openai'], color: '#4da6ff', models: [] }       // Blue
+        };
+
+        const otherModels = [];
+
+        // Sort models into categories
         data.available_models.forEach(modelName => {
+            let placed = false;
+            // Iterate manually to ensure specific logic if needed, but the loop is fine if prefixes are distinctive
+            for (const [catName, catData] of Object.entries(categories)) {
+                if (catData.prefix.some(p => modelName.startsWith(p) || modelName === p)) {
+                    catData.models.push(modelName);
+                    placed = true;
+                    break;
+                }
+            }
+            // Fallback for generic 'maia/' if not caught above (default to Google/Maia if strictly maia/ but not sub-categorized)
+            if (!placed && modelName.startsWith('maia/')) {
+                categories['Google'].models.push(modelName);
+                placed = true;
+            }
+
+            if (!placed) {
+                otherModels.push(modelName);
+            }
+        });
+
+        // Helper to create options
+        const createOption = (modelName) => {
             const info = modelInfo[modelName] || {};
             const isFree = info.cost && (info.cost.includes('free') || info.cost.includes('FREE'));
             const toolCalling = info.tool_calling ? '🔧' : '';
             const vision = info.vision ? '👁️' : '';
             const freeTag = isFree ? ' [FREE]' : '';
-            
-            // Create descriptive label
+
             let label = `${toolCalling}${vision} ${modelName}${freeTag}`;
-            if (info.description) {
-                label = `${toolCalling}${vision} ${modelName}${freeTag}`;
-            }
-            
+
             // Mark recommended models
-            const isRecommended = data.recommendations && 
-                (data.recommendations.tool_calling_free === modelName || 
-                 data.recommendations.default_for_mcp === modelName);
-            
+            const isRecommended = data.recommendations &&
+                (data.recommendations.tool_calling_free === modelName ||
+                    data.recommendations.default_for_mcp === modelName);
+
             if (isRecommended) {
                 label = `⭐ ${label}`;
             }
-            
-            // Select custom-vlm by default
-            const selected = modelName === 'custom-vlm' ? 'selected' : '';
-            options += `<option value="${modelName}" ${selected}>${label}</option>`;
+
+            // Determine if selected
+            let selected = '';
+            const defaultModel = data.recommendations && data.recommendations.default_for_mcp
+                ? data.recommendations.default_for_mcp
+                : 'custom-vlm';
+
+            if (modelName === defaultModel) {
+                selected = 'selected';
+            } else if (!data.available_models.includes(defaultModel) && modelName === 'custom-vlm') {
+                selected = 'selected';
+            }
+
+            return `<option value="${modelName}" ${selected} style="color: inherit;">${label}</option>`;
+        };
+
+        let finalHtml = '';
+
+        // Iterate categories ensuring explicit order
+        const categoryOrder = ['Anthropic', 'Deepseek', 'Google', 'Mistral', 'Moonshot', 'OpenAI'];
+
+        categoryOrder.forEach(catName => {
+            const catData = categories[catName];
+            if (catData.models.length > 0) {
+                // Style the optgroup label
+                finalHtml += `<optgroup label="${catName}" style="color: ${catData.color}; font-weight: bold;">`;
+                catData.models.forEach(m => {
+                    finalHtml += createOption(m);
+                });
+                finalHtml += `</optgroup>`;
+            }
         });
-        
-        modelSelect.innerHTML = options;
-        
-        console.log(`Loaded ${data.available_models.length} models from backend`);
-        
-        // Show notification about free models if available
-        const freeModels = data.available_models.filter(m => 
-            modelInfo[m] && modelInfo[m].cost && 
-            (modelInfo[m].cost.includes('free') || modelInfo[m].cost.includes('FREE'))
-        );
-        
-        if (freeModels.length > 0 && data.free_tier_info) {
-            console.log(`💡 ${freeModels.length} free models available: ${freeModels.join(', ')}`);
+
+        // Add Others if any
+        if (otherModels.length > 0) {
+            finalHtml += `<optgroup label="Other" style="color: #ffffff;">`;
+            otherModels.forEach(m => {
+                finalHtml += createOption(m);
+            });
+            finalHtml += `</optgroup>`;
         }
-        
+
+        modelSelect.innerHTML = finalHtml;
+        console.log(`Loaded ${data.available_models.length} models into categories.`);
+
     } catch (error) {
         console.error('Error loading models:', error);
-        // Fallback to default
         modelSelect.innerHTML = '<option value="custom-vlm" selected>Custom VLM (Default)</option>';
-        console.log('Failed to fetch models, using default');
     }
 }
 
@@ -300,6 +350,13 @@ async function getAgentInfo() {
 function clearResponse() {
     document.getElementById('chat-container').innerHTML = '<div class="d-flex flex-column align-items-center justify-content-center h-100 opacity-50"><div class="icon-box bg-light text-muted mb-3 rounded-circle" style="width: 64px; height: 64px;"><i class="bi bi-chat-square-dots fs-3"></i></div><p class="text-muted">Select an agent and start the conversation.</p></div>';
     document.getElementById('tool-status-container').innerHTML = '';
+
+    // Reset metrics
+    document.getElementById('metric-model-init').textContent = '-';
+    document.getElementById('metric-agent-init').textContent = '-';
+    document.getElementById('metric-response-time').textContent = '-';
+    document.getElementById('metric-recursion').textContent = '-';
+
     // document.getElementById('status-container').classList.add('d-none'); // Element removed in redesign
     // Reset the conversation history
     conversationHistory = [];
@@ -484,8 +541,7 @@ async function invokeAgentStream() {
                     content: tokenContainer.dataset.rawContent
                 });
 
-                // --- Trigger Chat Recommendations ---
-                fetchRecommendations(agentId, message, tokenContainer.dataset.rawContent);
+
 
                 break;
             }
@@ -662,6 +718,9 @@ function processEvent(eventData, tokenContainer) {
                 tokenContainer.dataset.rawContent = (tokenContainer.dataset.rawContent || '') + vlmContent;
                 tokenContainer.innerHTML = marked.parse(tokenContainer.dataset.rawContent);
                 break;
+            case 'metrics':
+                handleMetricsEvent(jsonData);
+                break;
             default:
                 console.log(`Unknown event type: ${eventType}`, jsonData);
         }
@@ -685,30 +744,50 @@ function handleStatusEvent(data) {
 // Handle tool status events
 function handleToolStatusEvent(data) {
     const toolStatusContainer = document.getElementById('tool-status-container');
+    if (!toolStatusContainer) return;
 
     // Create a new tool status element
     const toolStatusElement = document.createElement('div');
-    toolStatusElement.className = `tool-status ${data.is_start ? 'start' : 'end'}`;
+    toolStatusElement.className = `tool-log-entry mb-1 ${data.is_start ? 'text-info' : 'text-success'}`;
 
-    // Create the content
-    let content = `<strong>${data.tool_name}</strong>: ${data.status}`;
+    // Format timestamp
+    const time = new Date().toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
-    // Add input or output if available
-    if (data.input) {
-        content += `<br><small>Input: ${JSON.stringify(data.input)}</small>`;
+    if (data.is_start) {
+        // OPENING TAG
+        let inputStr = '';
+        if (data.input && Object.keys(data.input).length > 0) {
+            inputStr = ` <span class="text-white ms-2">[INPUT: ${JSON.stringify(data.input).substring(0, 100)}${JSON.stringify(data.input).length > 100 ? '...' : ''}]</span>`;
+        }
+        toolStatusElement.innerHTML = `<span class="text-white me-2">[${time}]</span> <span class="fw-bold text-white">▶ EXECUTING:</span> <span class="text-white">${data.tool_name}</span>${inputStr}`;
+    } else {
+        // CLOSING TAG
+        let outputStr = '';
+        if (data.output) {
+            let outText = typeof data.output === 'string' ? data.output : JSON.stringify(data.output);
+            outputStr = ` <span class="text-white ms-2">[OUTPUT: ${outText.substring(0, 100)}${outText.length > 100 ? '...' : ''}]</span>`;
+        }
+        toolStatusElement.innerHTML = `<span class="text-white me-2">[${time}]</span> <span class="fw-bold text-white">✓ COMPLETED:</span> <span class="text-white">${data.tool_name}</span>${outputStr}`;
     }
-
-    if (data.output) {
-        content += `<br><small>Output: ${data.output}</small>`;
-    }
-
-    toolStatusElement.innerHTML = content;
 
     // Add to the container
     toolStatusContainer.appendChild(toolStatusElement);
 
     // Scroll to the bottom
     toolStatusContainer.scrollTop = toolStatusContainer.scrollHeight;
+}
+
+// Handle metrics events
+function handleMetricsEvent(data) {
+    const modelInitElem = document.getElementById('metric-model-init');
+    const agentInitElem = document.getElementById('metric-agent-init');
+    const responseTimeElem = document.getElementById('metric-response-time');
+    const recursionElem = document.getElementById('metric-recursion');
+
+    if (modelInitElem) modelInitElem.textContent = `${data.model_init_time.toFixed(4)}s`;
+    if (agentInitElem) agentInitElem.textContent = `${data.agent_init_time.toFixed(4)}s`;
+    if (responseTimeElem) responseTimeElem.textContent = `${data.response_time.toFixed(4)}s`;
+    if (recursionElem) recursionElem.textContent = data.recursion_count;
 }
 
 // Global variables to track buffering state
@@ -997,137 +1076,3 @@ function executeScriptsInElement(element) {
     });
 }
 
-// --- Chat Recommendation Features ---
-
-/**
- * Fetch chat recommendations from the backend
- */
-async function fetchRecommendations(agentId, userMessage, agentResponse) {
-    // Check if feature is enabled via toggle
-    const toggle = document.getElementById('chat-recommendation-toggle');
-    if (toggle && !toggle.checked) {
-        return;
-    }
-
-    try {
-        const chipsContainer = document.getElementById('recommendation-chips-container');
-        if (!chipsContainer) return;
-
-        // Clear previous chips and hide container while loading
-        chipsContainer.innerHTML = '';
-        chipsContainer.style.setProperty('display', 'none', 'important');
-
-        // Prepare the payload
-        const payload = {
-            agent_id: agentId,
-            messages: [
-                { role: 'user', content: userMessage },
-                { role: 'assistant', content: agentResponse }
-            ],
-            user_input: userMessage
-        };
-
-        console.log('Fetching recommendations...', payload);
-
-        const response = await fetch(`${API.getBaseUrl()}/chat-recommendation/generate-recommendations`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${API.getToken()}`
-            },
-            body: JSON.stringify(payload)
-        });
-
-        if (!response.ok) {
-            if (response.status === 404) {
-                console.warn('Chat recommendation endpoint not found (404). Feature disabled.');
-                return;
-            }
-            throw new Error(`Failed to fetch recommendations: ${response.status}`);
-        }
-
-        const data = await response.json();
-
-        if (data && data.recommendations && Array.isArray(data.recommendations) && data.recommendations.length > 0) {
-            renderRecommendationChips(data.recommendations);
-        }
-
-    } catch (error) {
-        console.error('Error fetching recommendations:', error);
-        // Fail silently UI-wise, just log it
-    }
-}
-
-/**
- * Render recommendation chips above the input
- */
-function renderRecommendationChips(recommendations) {
-    const chipsContainer = document.getElementById('recommendation-chips-container');
-    if (!chipsContainer) return;
-
-    chipsContainer.innerHTML = '';
-
-    recommendations.forEach(rec => {
-        const text = typeof rec === 'string' ? rec : rec.text;
-        if (!text) return;
-
-        const chip = document.createElement('button');
-        chip.className = 'btn btn-sm btn-outline-light rounded-pill text-truncate';
-        chip.style.maxWidth = '200px';
-        chip.textContent = text;
-        chip.title = text; // Tooltip for full text
-
-        chip.onclick = () => applyRecommendation(text);
-
-        chipsContainer.appendChild(chip);
-    });
-
-    // Show the container
-    chipsContainer.style.removeProperty('display');
-    chipsContainer.classList.remove('d-none');
-}
-
-/**
- * Type text into an element with a typing effect
- * Adapted from agents.js
- */
-async function typeText(element, text) {
-    if (!element) return;
-
-    // Disable input while typing
-    element.disabled = true;
-    let displayedText = '';
-
-    try {
-        for (let i = 0; i < text.length; i++) {
-            displayedText += text[i];
-            element.value = displayedText + "▌"; // Add cursor effect
-            element.scrollTop = element.scrollHeight;
-
-            // Random delay between 10ms and 40ms
-            const delay = Math.floor(Math.random() * 30) + 10;
-            await new Promise(r => setTimeout(r, delay));
-        }
-
-        // Final text without cursor
-        element.value = displayedText;
-
-    } catch (e) {
-        console.error('Typing animation error:', e);
-        element.value = text;
-    } finally {
-        element.disabled = false;
-        element.focus();
-    }
-}
-
-/**
- * Apply a recommendation to the chat input
- */
-function applyRecommendation(text) {
-    const messageInput = document.getElementById('agent-message');
-    if (messageInput) {
-        // Use typing effect
-        typeText(messageInput, text);
-    }
-}
