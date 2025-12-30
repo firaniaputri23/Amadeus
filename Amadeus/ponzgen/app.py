@@ -71,13 +71,13 @@ from microservice.agent_creator.routes.user_input_routes import router as agent_
 from microservice.agent_creator.routes.autofill import router as agent_creator_autofill_router
 
 # Import routes from avatar_bucket microservice
-from microservice.avatar_bucket.routes.avatars import router as avatars_router
+# from microservice.avatar_bucket.routes.avatars import router as avatars_router
 
 # Import routes from rag microservice
 from microservice.rag.routes.rag import router as rag_router
 
 # Import routes from sendgrid_webhook microservice
-from microservice.rag.routes.rag import router as rag_router
+# from microservice.rag.routes.rag import router as rag_router
 
 # Add microservice directory to Python path
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "microservice"))
@@ -129,8 +129,6 @@ ROUTERS = [
     tools_router,
     agents_router,
     agent_logs_router,
-    agents_router,
-    agent_logs_router,
     companies_router,
     roles_router,
     agent_invoke_router,
@@ -139,8 +137,7 @@ ROUTERS = [
     agent_field_autofill_router,
     agent_creator_user_input_router,
     agent_creator_autofill_router,
-    avatars_router,
-    avatars_router,
+    # avatars_router,
     rag_router
 ]
 

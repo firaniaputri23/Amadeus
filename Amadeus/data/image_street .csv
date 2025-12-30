@@ -1,0 +1,11 @@
+image_name,caption,image_facts 
+F001.jpg,Suasana jalanan di depan gedung dengan kendaraan yang melintas.,"{""q1"": ""Beberapa kendaraan bermotor"", ""q2"": ""Sedang melintas di jalan raya"", ""q3"": ""Warna-warni kendaraan""}"
+F002.jpg,Trotoar jalan yang bersih dengan pepohonan di pinggir jalan raya.,"{""q1"": ""Trotoar dan pepohonan"", ""q2"": ""Berada di pinggir jalan raya"", ""q3"": ""Abu-abu (trotoar) dan hijau (daun)""}"
+F111.jpg,"Papan nama jalan ""Jl. T. Komputer IV"" dikelilingi oleh pepohonan hijau.","{""q1"": ""Satu papan nama jalan"", ""q2"": ""Terpasang di pinggir jalan"", ""q3"": ""Hijau dan putih""}"
+F036.jpg,"Beberapa sepeda motor terparkir di area berbatu, sementara dua orang berjalan menuju kendaraan.","{""q1"": ""Dua orang dan beberapa motor"", ""q2"": ""Sedang berjalan menuju tempat parkir"", ""q3"": ""Abu-abu (batu)""}"
+F064.jpg,"Seekor kucing hitam berjalan di area parkir berpaving, dikelilingi oleh tempat sampah kuning.","{""q1"": ""Satu kucing hitam"", ""q2"": ""Sedang berjalan di area parkir"", ""q3"": ""Hitam (kucing) dan kuning (tong sampah)""}"
+F165.jpg,Portal jalan biru putih yang tertutup dikelilingi pepohonan dan pagar proyek pembangunan.,"{""q1"": ""Satu portal jalan"", ""q2"": ""Menutup akses jalan"", ""q3"": ""Biru dan putih""}"
+TC414.jpg,Deretan sepeda motor yang terparkir rapi di area berpagar menambah kesan teratur.,"{""q1"": ""Deretan sepeda motor"", ""q2"": ""Sedang terparkir rapi"", ""q3"": ""Warna-warni motor""}"
+N0332.jpg,Sepeda motor hitam dikendarai seseorang memakai kaos hitam dan helm hijau.,"{""q1"": ""Satu orang pengendara motor"", ""q2"": ""Sedang melintas di jalan"", ""q3"": ""Hitam (motor) dan hijau (helm) inter""}"
+N0360.jpg,Mobil hitam dengan lampu depan putih yang memiliki ban dengan warna hitam.,"{""q1"": ""Satu mobil hitam"", ""q2"": ""Sedang melintas di jalan raya"", ""q3"": ""Hitam dan putih (lampu)""}"
+N1072.jpg,"Trotoar ini memiliki tiga buah kursi dengan warna biru, cokelat, dan merah.","{""q1"": ""Tiga buah kursi trotoar"", ""q2"": ""Terletak di jalur pejalan kaki"", ""q3"": ""Biru, cokelat, dan merah""}"
