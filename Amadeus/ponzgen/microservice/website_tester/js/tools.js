@@ -649,8 +649,13 @@ async function editTool(toolId) {
 
 // Refresh MCP tools
 async function refreshMcpTools() {
-    // return API.post('/mcp-tools/refresh', {});
-    return API.get('/mcp-tools/refresh');
+    try {
+        return await API.get('/mcp-tools/refresh');
+    } catch (error) {
+        // Silently fail if MCP refresh is not available or only supports SSE
+        console.warn('MCP refresh not available:', error);
+        return { status: 'skipped', message: 'MCP refresh not available' };
+    }
 }
 
 // Delete tool

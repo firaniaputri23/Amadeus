@@ -75,6 +75,7 @@ from microservice.agent_creator.routes.autofill import router as agent_creator_a
 
 # Import routes from rag microservice
 from microservice.rag.routes.rag import router as rag_router
+from microservice.rag.routes.image_rag import router as image_rag_router
 
 # Import routes from sendgrid_webhook microservice
 # from microservice.rag.routes.rag import router as rag_router
@@ -138,7 +139,8 @@ ROUTERS = [
     agent_creator_user_input_router,
     agent_creator_autofill_router,
     # avatars_router,
-    rag_router
+    rag_router,
+    image_rag_router
 ]
 
 # --- Custom Endpoint Override for Multimodal Invocation ---
@@ -211,11 +213,15 @@ async def invoke_agent_stream(
                     else:
                         max_new_tokens = getattr(agent_input.input, "max_new_tokens", None)
             
-            agent_input = await _maybe_handle_multimodal_and_augment(
+            agent_input, caption = await _maybe_handle_multimodal_and_augment(
                 agent_input, 
                 max_new_tokens=max_new_tokens, 
                 model_name=model_name
             )
+            
+            # Log caption internally (not shown to frontend)
+            if caption:
+                print(f"DEBUG: VLM Caption generated (internal): {caption}")
         
         
         # Invoke the agent with streaming wrapper

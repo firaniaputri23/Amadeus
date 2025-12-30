@@ -182,8 +182,8 @@ class MyModel(nn.Module):
             return f"Error generating text: {str(e)}"
 
     def generate_answer_image(self, pil_image: Image.Image, max_new_tokens=64):
-        """Generate answer given an image."""
-        # 1. Create prompt
+        """Generate simple caption for an image. VLM just does basic captioning."""
+        # 1. Create prompt with hardcoded instruction (what VLM was trained on)
         instruction_now = "<start_of_turn>user\n"
         instruction_now += f"<start_image> {self.dummy_img_token}\n<end_image>\n"
         instruction_now += f"Create a simple description of the image!\n<end_of_turn>\n<start_of_turn>model\n"
@@ -380,7 +380,13 @@ class CustomVLMLLM(LLM):
 
     def invoke_with_image(self, image_path: str, prompt_text: str = None, max_new_tokens: int = 64) -> str:
         """
-        Invoke the model with an image.
+        Invoke the model with an image to generate a simple caption.
+        VLM just does basic image captioning.
+        
+        Args:
+            image_path: Path to the image
+            prompt_text: Unused legacy parameter
+            max_new_tokens: Max tokens to generate
         """
         try:
             if not os.path.exists(image_path):
@@ -438,6 +444,7 @@ def get_custom_vlm_model() -> CustomVLMLLM:
 async def _maybe_handle_multimodal_and_augment(agent_input, max_new_tokens=64, model_name=None):
     """
     Helper function to check if input contains an image and invoke VLM if so.
+    Also handles RAG retrieval BEFORE VLM analysis if the agent name contains "RAG".
     """
     # Check if we have an image path in the input
     image_path = None
@@ -450,24 +457,143 @@ async def _maybe_handle_multimodal_and_augment(agent_input, max_new_tokens=64, m
     if image_path:
         print(f"Multimodal input detected! Image path: {image_path}")
         
+        # Check if RAG should be enabled (based on agent name)
+        use_rag = False
+        agent_name = ""
+        if hasattr(agent_input, 'agent_config') and agent_input.agent_config:
+            if isinstance(agent_input.agent_config, dict):
+                agent_name = agent_input.agent_config.get('agent_name', '')
+            else:
+                agent_name = getattr(agent_input.agent_config, 'agent_name', '')
+            
+            # Enable RAG if agent name contains "RAG" (case insensitive)
+            if agent_name and 'rag' in agent_name.lower():
+                use_rag = True
+                print(f"✅ RAG enabled for agent: {agent_name}")
+        
+        # Step 1: Retrieve relevant images if RAG is enabled (BEFORE VLM)
+        rag_context = ""
+        if use_rag:
+            try:
+                from microservice.rag.service.rag._image_rag_utils import retrieval_by_image
+                
+                print(f"🔍 [Step 1/3] Retrieving similar images from database...")
+                
+                # Retrieve top 3 similar images based on the uploaded image
+                retrieved_images = retrieval_by_image(
+                    image_path=image_path,
+                    top_k=3,
+                    category_filter=None
+                )
+                
+                if retrieved_images:
+                    print(f"✅ Retrieved {len(retrieved_images)} similar images")
+                    print("\n" + "="*80)
+                    print("📊 RAG RETRIEVAL RESULTS:")
+                    print("="*80)
+                    
+                    # Build simplified context for VLM
+                    rag_descriptions = []
+                    for i, (file_id, score, metadata) in enumerate(retrieved_images, 1):
+                        caption = metadata.get('caption_raw', 'N/A')
+                        facts = metadata.get('facts', 'N/A')
+                        category = metadata.get('category', 'N/A')
+                        
+                        # Terminal debug output
+                        print(f"\n  [{i}] Image ID: {file_id}")
+                        print(f"      Similarity Score: {score:.4f}")
+                        print(f"      Category: {category}")
+                        print(f"      Caption: {caption}")
+                        if facts and facts != 'N/A':
+                            print(f"      Facts: {facts}")
+                        
+                        # Extract simple description from facts if available
+                        if facts and facts != 'N/A' and isinstance(facts, dict):
+                            # Extract only the object/subject info (q1) and action (q2)
+                            objects = facts.get('q1', '')
+                            action = facts.get('q2', '')
+                            if objects or action:
+                                simple_fact = f"{objects}. {action}".strip()
+                                rag_descriptions.append(f"{caption} ({simple_fact})")
+                            else:
+                                rag_descriptions.append(caption)
+                        else:
+                            rag_descriptions.append(caption)
+                    
+                    # Create concise context
+                    rag_context = "Similar scenes: " + "; ".join(rag_descriptions[:2])  # Only use top 2
+                    
+                    print("\n" + "="*80)
+                    print("📝 RAG CONTEXT TO BE PASSED TO VLM:")
+                    print("="*80)
+                    print(rag_context)
+                    print("="*80 + "\n")
+                else:
+                    print("⚠️ No similar images retrieved")
+            except Exception as e:
+                print(f"⚠️ RAG retrieval failed: {e}")
+                import traceback
+                traceback.print_exc()
+        
+        # Step 2: Invoke VLM to generate basic image caption
+        print("🔍 [Step 2/3] Generating basic image caption with VLM...")
+            
         print("Using Custom VLM...")
         vlm = get_custom_vlm_model()
-        vlm_response = vlm.invoke_with_image(image_path, max_new_tokens=max_new_tokens)
         
-        print(f"VLM Response: {vlm_response}")
-        
-        # Augment the user message with the VLM description
-        original_message = ""
+        # Get user's original query (will be used by Agent LLM, not VLM)
+        user_query = ""
         if isinstance(agent_input.input, dict):
-            original_message = agent_input.input.get('text', '') or agent_input.input.get('messages', '')
-            # Update input with VLM context
-            agent_input.input['context'] = f"{agent_input.input.get('context', '')}\n\n[Image Description]: {vlm_response}"
+            user_query = agent_input.input.get('text', '') or agent_input.input.get('messages', '')
         else:
-            original_message = getattr(agent_input.input, 'messages', '')
-            # Update input with VLM context
+            user_query = getattr(agent_input.input, 'messages', '')
+        
+        print(f"\n💬 User Query: {user_query}\n")
+        
+        # VLM just generates basic caption (no user question, no RAG context)
+        vlm_caption = vlm.invoke_with_image(
+            image_path, 
+            max_new_tokens=max_new_tokens
+        )
+        
+        print("\n" + "="*80)
+        print("🎯 VLM CAPTION (Raw Output):")
+        print("="*80)
+        print(vlm_caption)
+        print("="*80 + "\n")
+        
+        # Step 3: Build context for Agent LLM
+        print("🔍 [Step 3/3] Building context for Agent LLM...")
+        
+        # Build rich context with VLM output + RAG results (if available)
+        context_parts = []
+        
+        # Add VLM caption without label (clean format for frontend)
+        context_parts.append(f"Image shows: {vlm_caption}")
+        
+        # Add RAG results if available
+        if rag_context:
+            context_parts.append(f"Additional context: {rag_context}")
+        
+        # Combine all context
+        full_context = "\n\n".join(context_parts)
+        
+        print("\n" + "="*80)
+        print("📝 FULL CONTEXT FOR AGENT LLM:")
+        print("="*80)
+        print(full_context)
+        print("="*80 + "\n")
+        
+        # Pass context to Agent LLM
+        if isinstance(agent_input.input, dict):
+            agent_input.input['context'] = f"{agent_input.input.get('context', '')}\n\n{full_context}"
+        else:
             current_context = getattr(agent_input.input, 'context', '')
-            setattr(agent_input.input, 'context', f"{current_context}\n\n[Image Description]: {vlm_response}")
-            
+            setattr(agent_input.input, 'context', f"{current_context}\n\n{full_context}")
+        
+        # Return agent_input and the raw VLM caption (for logging only, not for display)
+        return agent_input, vlm_caption
 
 
-    return agent_input
+    # No image detected, return as-is with no caption
+    return agent_input, None
