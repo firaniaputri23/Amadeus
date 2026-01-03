@@ -482,18 +482,13 @@ async def invoke_agent_stream(
                 # Call helper, now unpacking the tuple
                 updated_agent_input, caption = await _maybe_handle_multimodal_and_augment(agent_input, max_new_tokens=max_new_tokens, model_name=model_name)
                 
-                # Use the returned caption directly
+                # DON'T stream VLM caption to frontend anymore
+                # The Agent LLM will process it and generate the final answer
+                # Caption is only for internal logging
                 if caption:
-                    # Yield the caption as a special event or just info
-                    yield f"event: status\ndata: {json.dumps({'status': 'Image analyzed'})}\n\n"
-                    
-                    # --- CRITICAL CHANGE: Stream caption as 'token' events so it shows in chat ---
-                    vlm_prefix = "**[VLM Analysis]**:"
-                    yield f"event: token\ndata: {json.dumps({'token': f'{vlm_prefix} {caption}'})}\n\n"
-                    
-                    separator = "\n\n---\n\n"
-                    yield f"event: token\ndata: {json.dumps({'token': separator})}\n\n"
-                    # --------------------------------------------------------------------------
+                    print(f"DEBUG: VLM Caption generated (internal): {caption}")
+                    # Yield only status, no caption display
+                    yield f"event: status\ndata: {json.dumps({'status': 'Processing with AI Agent...'})}\n\n"
                     
                     # Check if the user query is empty or just a placeholder dot
                     input_msg = ""

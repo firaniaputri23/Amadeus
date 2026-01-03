@@ -13,6 +13,7 @@ PUBLIC_PATH_PREFIXES = [
     "/view/agent",
     "/view/thread",
     "/sendgrid/emails",  # Add SendGrid email endpoints
+    "/image-rag",  # Image RAG endpoints for testing
 ]  # Add any path prefixes that should be public
 
 # Middleware for JWT Authentication
