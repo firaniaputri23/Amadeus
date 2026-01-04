@@ -1076,3 +1076,16 @@ function executeScriptsInElement(element) {
     });
 }
 
+/**
+ * Sends a quick message from the recommendation chips
+ * @param {string} text - The message to send
+ */
+function sendQuickMessage(text) {
+    const messageInput = document.getElementById('agent-message');
+    if (messageInput) {
+        messageInput.value = text;
+        // Trigger the invoke function
+        invokeAgentStream();
+    }
+}
+
