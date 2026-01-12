@@ -347,7 +347,8 @@ class ImageVectorPopulator:
 def main():
     """Main function to run the population script."""
     # Set data directory (adjust this path as needed)
-    data_dir = r"D:\Bithan\ITS\Semester 7\temp\Amadeus\data"
+    data_dir = r"C:\Users\Firania\Downloads\Amadeus\Amadeus\data"
+    
     
     print(f"📍 Data directory: {data_dir}")
     print(f"📍 Target tables: image_indoor, image_outdoor, image_street")

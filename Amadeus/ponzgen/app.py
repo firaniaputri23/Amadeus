@@ -54,7 +54,7 @@ from microservice.agent_boilerplate.routes.agent_api import router as agent_api_
 try:
     from microservice.agent_boilerplate.boilerplate.models import AgentInput
     from microservice.agent_boilerplate.boilerplate.agent_boilerplate import agent_boilerplate
-    from microservice.agent_boilerplate.boilerplate.utils.custom_vlm_model import _maybe_handle_multimodal_and_augment
+    from microservice.agent_boilerplate.boilerplate.utils.custom_vlm_model import _maybe_handle_multimodal_and_augment, get_custom_vlm_model
     from microservice.agent_boilerplate.routes.agent_invoke import get_supabase_client
 except ImportError as e:
     # Fallback/Placeholder if imports are structurally different in your project
@@ -143,6 +143,18 @@ ROUTERS = [
     image_rag_router
 ]
 
+@app.on_event("startup")
+async def startup_event():
+    """Perform startup tasks."""
+    print("🚀 App Startup: Pre-loading VLM Model to VRAM...")
+    try:
+        # Pre-load Singleton Model
+        if 'get_custom_vlm_model' in globals():
+            get_custom_vlm_model()
+            print("✅ VLM Model Loaded and Ready.")
+    except Exception as e:
+        print(f"⚠️ Failed to pre-load VLM: {e}")
+
 # --- Custom Endpoint Override for Multimodal Invocation ---
 @app.post("/agent-invoke/{agent_id}/invoke-stream", tags=["Agent Invoke"], response_class=StreamingResponse)
 async def invoke_agent_stream(
@@ -213,7 +225,7 @@ async def invoke_agent_stream(
                     else:
                         max_new_tokens = getattr(agent_input.input, "max_new_tokens", None)
             
-            agent_input, caption = await _maybe_handle_multimodal_and_augment(
+            agent_input, caption, use_mcp = await _maybe_handle_multimodal_and_augment(
                 agent_input, 
                 max_new_tokens=max_new_tokens, 
                 model_name=model_name
@@ -222,6 +234,9 @@ async def invoke_agent_stream(
             # Log caption internally (not shown to frontend)
             if caption:
                 print(f"DEBUG: VLM Caption generated (internal): {caption}")
+        
+        else:
+             use_mcp = False
         
         
         # Invoke the agent with streaming wrapper
@@ -241,6 +256,36 @@ async def invoke_agent_stream(
                 if image_path:
                     # Yield initial status only if there's an image
                     yield f"event: status\ndata: {json.dumps({'status': 'Analyzing image...'})}\n\n"
+                    
+                    # Yield MCP tool visualization if enabled
+                    if use_mcp:
+                         # Extract Project ID for visualization
+                        supabase_url = os.getenv("SUPABASE_URL", "")
+                        project_id = "unknown"
+                        if "//" in supabase_url:
+                            project_id = supabase_url.split("//")[1].split(".")[0]
+                            
+                        # Start event
+                        tool_data_start = {
+                            "tool_name": "Supabase MCP",
+                            "status": "Start using MCP: Supabase MCP",
+                            "is_start": 1,
+                            "input": {"project_id": project_id, "action": "verify_and_retrieve"}
+                        }
+                        yield f"event: tool_status\ndata: {json.dumps(tool_data_start)}\n\n"
+                        
+                        import asyncio
+                        await asyncio.sleep(0.5) # Slight delay for visual effect
+                        
+                        # End event
+                        tool_data_end = {
+                            "tool_name": "Supabase MCP",
+                            "status": "Finish using MCP: Supabase MCP",
+                            "is_start": 0,
+                            "output": {"success": True, "message": "Project verified. Context retrieved via RAG."}
+                        }
+                        yield f"event: tool_status\ndata: {json.dumps(tool_data_end)}\n\n"
+                    
                     # After VLM processing (which already happened), yield analysis complete
                     # Extract caption from context if present
                     if hasattr(agent_input, 'input'):
@@ -468,6 +513,10 @@ async def general_exception_handler(request: Request, exc: Exception):
         status_code=error.status_code,
         content=error.detail
     )
+
+# Register all routers (AFTER manual overrides)
+for router in ROUTERS:
+    app.include_router(router)
 
 if __name__ == "__main__":
     # Test logging

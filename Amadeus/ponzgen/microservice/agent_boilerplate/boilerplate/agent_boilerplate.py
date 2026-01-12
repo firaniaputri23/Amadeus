@@ -120,6 +120,27 @@ class AgentBoilerplate:
         
         return final_message, config
     
+    def _is_server_reachable(self, url: str) -> bool:
+        """Check if the MCP server is reachable."""
+        try:
+            from urllib.parse import urlparse
+            import socket
+            parsed = urlparse(url)
+            host = parsed.hostname or 'localhost'
+            port = parsed.port
+            
+            if not port:
+                return True # Cannot check port, assume reachable or non-TCP
+                
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(0.5) # Short timeout
+            result = sock.connect_ex((host, port))
+            sock.close()
+            return result == 0
+        except Exception as e:
+            print(f"Warning: Could not check server reachability: {e}")
+            return False
+
     def _parse_tools(self, agent_config_data: Dict[str, Any]) -> Tuple[bool, Dict[str, Any]]:
         """
         Parse tool details from agent_config_data and create tool_list_mcp.
@@ -143,11 +164,25 @@ class AgentBoilerplate:
                         tool_name = tool.get("name", "unknown_tool")
                         released_config = latest_version.get("released", {})
                         port = released_config.get("port", "10001")
-                        # Create tool configuration
-                        mcp_config[tool_name] = {
-                            "url": f"http://localhost:{port}/sse",
-                            "transport": released_config.get("transport", "sse"),
-                        }
+                        
+                        url = f"http://localhost:{port}/sse"
+                        
+                        # REDIRECT HACK: Synchronize Agent Client with MCP Manager
+                        # The Manager forces Supabase to 10399 to avoid conflicts, but Config says 10396.
+                        if "Supabase" in tool_name and str(port) == "10396":
+                             url = "http://localhost:10399/sse"
+                             print(f"🔄 Redirected {tool_name} connection: 10396 -> 10399 (Manager Port)")
+                        
+                        # Validate if the server is actually running
+                        if self._is_server_reachable(url):
+                            # Create tool configuration
+                            mcp_config[tool_name] = {
+                                "url": url,
+                                "transport": released_config.get("transport", "sse"),
+                            }
+                            has_tools = True
+                        else:
+                            print(f"⚠️ Skipping tool '{tool_name}' because server at {url} is unreachable.")
 
                         # # Add or update all environment variables from the config's env
                         # if "env" in released_config:
@@ -156,8 +191,6 @@ class AgentBoilerplate:
                         #     for key, value in released_config.get("env", {}).items():
                         #         env[key] = value
                         #     mcp_config[tool_name]["env"] = env
-
-                        has_tools = True
         
         return has_tools, mcp_config
     

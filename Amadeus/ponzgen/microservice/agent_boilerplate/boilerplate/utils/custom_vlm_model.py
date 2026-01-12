@@ -1,8 +1,11 @@
 """
-Custom VLM Model Wrapper for LangChain Integration
+Custom VLM Model Wrapper for LangChain Integration (Fixed Version)
 
-This module wraps the Gemma-2 + CLIP vision model with LangChain's BaseLLM interface,
-enabling it to work seamlessly with the agent boilerplate.
+This module wraps the Gemma-2 + CLIP vision model with LangChain's BaseLLM interface.
+Improvements:
+- Matches standalone script prompt (Bahasa Indonesia).
+- Uses higher precision (bfloat16) instead of 4-bit for better quality.
+- Aligns generation parameters (beams, repetition penalty) with the best checkpoint.
 """
 
 import torch
@@ -10,6 +13,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 import warnings
 import os
+import asyncio
+import functools
 from typing import Any, List, Optional
 from PIL import Image
 from pathlib import Path
@@ -24,15 +29,21 @@ from transformers import (
 from langchain_core.language_models import LLM
 from langchain_core.callbacks.manager import CallbackManagerForLLMRun
 
+# Suppress warnings
+warnings.filterwarnings("ignore")
+
 # ===============================================================
 # CONFIGURATION
 # ===============================================================
 
 curr_dir = os.path.dirname(os.path.abspath(__file__))
-# Navigate up 5 levels from .../ponzgen/microservice/agent_boilerplate/boilerplate/utils/ to project root
+# Navigate up levels to project root (Adjust if structure changes)
 project_root = os.path.abspath(os.path.join(curr_dir, "../../../../../"))
 BASE_DIR = os.path.join(project_root, "models")
-MODEL_PATH = os.path.join(BASE_DIR, "BLEU11.pt")
+
+# Pastikan nama file checkpoint benar
+MODEL_PATH = os.path.join(BASE_DIR, "BLEU15.pt") 
+
 os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
@@ -48,7 +59,7 @@ TRIGGER_STR = "<start_image>"
 
 
 # ===============================================================
-# MODEL ARCHITECTURE (From BLEU-4_11.88.ipynb)
+# MODEL ARCHITECTURE (Must match training/standalone script)
 # ===============================================================
 
 class MyAdaptor(nn.Module):
@@ -65,8 +76,7 @@ class MyAdaptor(nn.Module):
         )
 
     def forward(self, img_output):
-        img_embed = self.adapter_mlp(img_output)
-        return img_embed
+        return self.adapter_mlp(img_output)
 
 
 class MyModel(nn.Module):
@@ -75,23 +85,30 @@ class MyModel(nn.Module):
     def __init__(self):
         super(MyModel, self).__init__()
         
-        # Configure Quantization for 4-bit loading (Fixes OOM on 8GB cards)
+        # --- KONFIGURASI PENTING ---
+        # Set ke False untuk kualitas maksimal (seperti script standalone).
+        # Set ke True hanya jika VRAM < 12GB dan terjadi OOM.
+        self.use_4bit = False  
+        
         quantization_config = None
-        if DEVICE == "cuda":
+        if DEVICE == "cuda" and self.use_4bit:
             quantization_config = BitsAndBytesConfig(
                 load_in_4bit=True,
                 bnb_4bit_compute_dtype=torch.bfloat16
             )
 
+        print(f" -> Loading Gemma-2 (4-bit: {self.use_4bit})...")
         # Initialize Gemma-2
         self.model_language = AutoModelForCausalLM.from_pretrained(
             GEMMA_MODEL_ID,
             torch_dtype=torch.bfloat16,
-            device_map="auto" if DEVICE == "cuda" else None,
+            # Force CUDA to avoid CPU offloading for small models
+            device_map="cuda" if DEVICE == "cuda" else None,
             quantization_config=quantization_config
         )
         self.tokenizer_language = AutoTokenizer.from_pretrained(GEMMA_MODEL_ID, padding_side='right')
         
+        print(" -> Loading CLIP Vision...")
         # Initialize CLIP
         self.image_processor = AutoProcessor.from_pretrained(CLIP_MODEL_ID).image_processor
         self.model_image = CLIPVisionModel.from_pretrained(CLIP_MODEL_ID).to(DEVICE)
@@ -140,25 +157,86 @@ class MyModel(nn.Module):
         replaced_embed = torch.cat((start_embed, replacement_embed.to(now_input_tokens.dtype), end_embed), 0)
         return replaced_embed
 
+    def generate_answer_image(self, pil_image: Image.Image, max_new_tokens=60):
+        """
+        Generate caption with EXACT logic from the standalone evaluation script.
+        Uses hardcoded indices to ensure image embeddings are inserted correctly.
+        """
+        # 1. Prompt template - HARUS SAMA PERSIS dengan script training/eval
+        # Template: <start_of_turn>user\n<start_image> {50_dummy_tokens}\n<end_image>\nBerikan...
+        instruction_now = f"<start_of_turn>user\n<start_image> {self.dummy_img_token}\n<end_image>\nBerikan deskripsi singkat gambar ini dalam Bahasa Indonesia!\n<end_of_turn>\n<start_of_turn>model\n"
+
+        # 2. Tokenize text
+        # Kita perlu input_ids untuk mendapatkan text embeddings awal
+        inputs = self.tokenizer_language(instruction_now, return_tensors="pt")
+        inputs = {k: v.to(self.model_language.device) for k, v in inputs.items()}
+
+        # 3. Get Text Embeddings (Original)
+        prompt_embeds = self.model_language.model.embed_tokens(inputs['input_ids'])
+
+        # 4. Get Image Embeddings (Projected)
+        image_input = self.image_processor(pil_image, return_tensors="pt")['pixel_values']
+        img_embed = self.get_image_embed(image_input)
+
+        # 5. CONCATENATION (The "Magic" Fix)
+        # Di script eval, kamu pakai: prompt_embeds[0, :6] + img + prompt_embeds[0, 56:]
+        # Index 6 adalah posisi tepat setelah <start_image>
+        # Index 56 adalah posisi tepat setelah <end_image> (6 + 50 token dummy = 56)
+        
+        # Ambil bagian awal (sebelum gambar)
+        part1 = prompt_embeds[0, :6] 
+        # Ambil bagian akhir (setelah gambar - melewati 50 token dummy)
+        part2 = prompt_embeds[0, 56:]
+        
+        # Gabungkan: [Awal] + [Gambar] + [Akhir]
+        inputs_embeds = torch.cat((part1, img_embed[0], part2), 0).unsqueeze(0)
+
+        # 6. Generate
+        # PENTING: Jangan kirim attention_mask! 
+        # Script eval kamu ada warning "The attention mask is not set...", itu artinya dia jalan TANPA mask.
+        # Kalau kita kirim mask dari text asli, model bingung karena ada token gambar yang menyisip.
+        
+        if max_new_tokens is None: max_new_tokens = 60
+
+        output_now = self.model_language.generate(
+            inputs_embeds=inputs_embeds,
+            max_new_tokens=max_new_tokens,
+            num_beams=5,               # Beam search
+            do_sample=False,           # Deterministic
+            repetition_penalty=1.5,    # Penalty tinggi
+            no_repeat_ngram_size=3,    # No repeat
+            early_stopping=True,
+            pad_token_id=self.tokenizer_language.eos_token_id
+        )
+
+        # 7. Decode output
+        output_string = self.tokenizer_language.batch_decode(
+            output_now,
+            skip_special_tokens=True,
+            clean_up_tokenization_spaces=False
+        )[0]
+
+        # 8. Clean text
+        if "model\n" in output_string:
+            return output_string.split("model\n")[-1].strip()
+        else:
+            return output_string.strip()
+
     def generate_answer_text(self, text_input: str, max_new_tokens=256, temperature=None):
         """Generate answer for text-only input."""
 
-        # 1. Basic format check for Gemma
         if "<start_of_turn>" not in text_input:
              instruction_now = f"<start_of_turn>user\n{text_input}<end_of_turn>\n<start_of_turn>model\n"
         else:
              instruction_now = text_input
 
-        # Default temperature if not provided
         if temperature is None:
             temperature = 0.7
 
         try:
-            # 2. Tokenize
             inputs = self.tokenizer_language(instruction_now, return_tensors="pt")
             inputs = {k: v.to(self.model_language.device) for k, v in inputs.items()}
             
-            # 3. Generate
             outputs = self.model_language.generate(
                 **inputs,
                 max_new_tokens=max_new_tokens,
@@ -169,83 +247,15 @@ class MyModel(nn.Module):
                 pad_token_id=self.tokenizer_language.eos_token_id
             )
             
-            # 4. Decode
             input_len = inputs['input_ids'].shape[1]
             generated_tokens = outputs[:, input_len:]
             output_text = self.tokenizer_language.decode(generated_tokens[0], skip_special_tokens=True)
             
             return output_text.strip()
         except Exception as e:
-            print(f"ERROR in generate_answer_text: {e}")
             import traceback
             traceback.print_exc()
             return f"Error generating text: {str(e)}"
-
-    def generate_answer_image(self, pil_image: Image.Image, max_new_tokens=64):
-        """Generate simple caption for an image. VLM just does basic captioning."""
-        # 1. Create prompt with hardcoded instruction (what VLM was trained on)
-        instruction_now = "<start_of_turn>user\n"
-        instruction_now += f"<start_image> {self.dummy_img_token}\n<end_image>\n"
-        instruction_now += f"Create a simple description of the image!\n<end_of_turn>\n<start_of_turn>model\n"
-
-        # 2. Tokenize prompt
-        prompt_tokens = self.tokenizer_language([instruction_now], padding=False, return_tensors="pt")
-        prompt_tokens = {k: v.to(self.model_language.device) for k, v in prompt_tokens.items()}
-
-        # 3. Get text embeddings
-        prompt_embeds = self.model_language.model.embed_tokens(prompt_tokens['input_ids'])
-
-        # 4. Get image embeddings
-        image_input = self.image_processor([pil_image], return_tensors="pt")['pixel_values']
-        img_embed = self.get_image_embed(image_input)
-
-        # 5. Find replacement location
-        tokens_text_now = prompt_tokens['input_ids'][0].detach().cpu()
-        dummy_location = self.search_trigger_idx(tokens_text_now, self.trigger_str_img)
-
-        if dummy_location is None:
-            print("WARNING: Could not find trigger string in prompt.")
-            return ""
-
-        # 6. Replace embeddings
-        replaced_embeds = self.split_and_replace(prompt_embeds[0], img_embed[0], dummy_location)
-        replaced_embeds = replaced_embeds.unsqueeze(0)
-
-        # DEBUG: Print shapes
-        # print(f"DEBUG: replaced_embeds shape: {replaced_embeds.shape}")
-        # print(f"DEBUG: attention_mask shape: {prompt_tokens['attention_mask'].shape}")
-        # print(f"DEBUG: max_new_tokens: {max_new_tokens}")
-        # print(f"DEBUG: device: {self.model_language.device}")
-
-        # Ensure max_new_tokens is set
-        if max_new_tokens is None:
-            max_new_tokens = 64
-
-        # 7. Generate
-        output_now = self.model_language.generate(
-            inputs_embeds=replaced_embeds,
-            attention_mask=prompt_tokens['attention_mask'],
-            max_new_tokens=max_new_tokens,
-            num_beams=5,
-            do_sample=False,
-            repetition_penalty=1.2,
-            no_repeat_ngram_size=3,
-            pad_token_id=self.tokenizer_language.eos_token_id
-        )
-
-        # 8. Decode
-        output_string = self.tokenizer_language.batch_decode(
-            output_now,
-            skip_special_tokens=True,
-            clean_up_tokenization_spaces=False
-        )[0]
-
-        # 9. Clean output
-        parts = output_string.split("model\n")
-        if len(parts) > 1:
-            return parts[-1].strip()
-        else:
-            return output_string.strip()
 
 
 # ===============================================================
@@ -264,11 +274,9 @@ class CustomVLMLLM(LLM):
 
     @property
     def _llm_type(self) -> str:
-        """Return type of LLM."""
         return "custom_vlm"
 
     def __init__(self, **kwargs):
-        """Initialize the custom VLM LLM."""
         super().__init__(**kwargs)
         if self.model is None:
             self._load_model()
@@ -287,16 +295,15 @@ class CustomVLMLLM(LLM):
             # Load state dict into adaptor
             if 'model_state_dict' in checkpoint:
                 self.model.adaptor.load_state_dict(checkpoint['model_state_dict'])
-                print(f"Successfully loaded model from Epoch {checkpoint.get('epoch', 'N/A')}, Step {checkpoint.get('global_step', 'N/A')}")
+                print(f"Successfully loaded model from Epoch {checkpoint.get('epoch', 'N/A')}")
             else:
-                print("WARNING: 'model_state_dict' not found in checkpoint. Loading assuming full state dict or other format.")
-                # Try loading directly if it's just the state dict
+                # Fallback loading
                 try:
                     self.model.adaptor.load_state_dict(checkpoint)
                 except Exception as e:
                     print(f"Error loading state dict: {e}")
         else:
-            print(f"WARNING: Model path {self.model_path} does not exist. Model initialized with random weights.")
+            print(f"WARNING: Model path {self.model_path} does not exist. Using random weights.")
 
         self.model.eval()
         print(f"✅ Custom VLM model ready on device: {self.device}")
@@ -308,22 +315,13 @@ class CustomVLMLLM(LLM):
         run_manager: Optional[CallbackManagerForLLMRun] = None,
         **kwargs: Any,
     ) -> str:
-        """
-        Run the LLM on the given prompt and input.
-        """
         if self.model is None:
-            print("DEBUG: Model is None, calling _load_model")
             self._load_model()
             
-        # Use the stored temperature
         response = self.model.generate_answer_text(prompt, temperature=self.temperature)
         
-        # CRITICAL FIX: Emit the token callback so the frontend receives the data
         if run_manager:
             run_manager.on_llm_new_token(response)
-        else:
-            # print("DEBUG: No run_manager provided, skipping token emission")
-            pass
             
         return response
 
@@ -334,59 +332,39 @@ class CustomVLMLLM(LLM):
         run_manager: Optional[CallbackManagerForLLMRun] = None,
         **kwargs: Any,
     ) -> str:
-        """Async version of _call with streaming support."""
         if self.model is None:
             self._load_model()
             
-        # Run generation in a separate thread to not block the event loop
-        import asyncio
-        import functools
-        
         loop = asyncio.get_running_loop()
         response = await loop.run_in_executor(
             None, 
             functools.partial(self.model.generate_answer_text, prompt, temperature=self.temperature)
         )
         
-        # Emit the token callback asynchronously
-        # For non-streaming models like this one, we just emit the whole response as one token
-        # unless we implement true streaming in generate_answer_text
         if run_manager:
             await run_manager.on_llm_new_token(response)
             
         return response
 
     async def astream(self, input: Any, config: Optional[Any] = None, **kwargs: Any):
-        """Streaming support for Custom VLM."""
-        # This is strictly for the agent_field_autofill which expects an astream method
-        # The input is usually a list of messages, but we just need the last one's content
         prompt = ""
         if isinstance(input, list):
-             # It's a list of BaseMessages, concatenate them
-             # This ensures SystemMessages are included in the prompt
              prompt = "\n\n".join([msg.content for msg in input])
         else:
              prompt = str(input)
              
         response = await self._acall(prompt)
         
-        # Yield the response in chunks (simulated streaming)
+        # Simulated streaming
         chunk_size = 4
         for i in range(0, len(response), chunk_size):
             chunk = response[i:i+chunk_size]
             yield type('Chunk', (object,), {'content': chunk})()
-            import asyncio
-            await asyncio.sleep(0.01) # Small delay to simulate streaming
+            await asyncio.sleep(0.01)
 
-    def invoke_with_image(self, image_path: str, prompt_text: str = None, max_new_tokens: int = 64) -> str:
+    def invoke_with_image(self, image_path: str, prompt_text: str = None, max_new_tokens: int = 60) -> str:
         """
         Invoke the model with an image to generate a simple caption.
-        VLM just does basic image captioning.
-        
-        Args:
-            image_path: Path to the image
-            prompt_text: Unused legacy parameter
-            max_new_tokens: Max tokens to generate
         """
         try:
             if not os.path.exists(image_path):
@@ -405,30 +383,12 @@ class CustomVLMLLM(LLM):
             return f"Error during inference: {str(e)}"
 
     def bind_tools(self, tools: list, **kwargs):
-        """
-        Bind tools to the model (required for LangChain ReAct agents).
-        
-        This is a pass-through method since our custom VLM doesn't natively support
-        tool calling like OpenAI models. The actual tool invocation is handled by
-        the ReAct agent framework, not the model itself.
-        
-        Args:
-            tools: List of tools to bind
-            **kwargs: Additional arguments
-            
-        Returns:
-            self (for method chaining)
-        """
-        # Store tools for reference (optional)
         self._bound_tools = tools
-        # Return self to support method chaining
         return self
 
 
-
-
 # ===============================================================
-# GLOBAL MODEL INSTANCE & HELPER
+# GLOBAL MODEL INSTANCE & HELPERS
 # ===============================================================
 
 _custom_vlm_instance = None
@@ -439,12 +399,14 @@ def get_custom_vlm_model() -> CustomVLMLLM:
     global _custom_vlm_instance
     if _custom_vlm_instance is None:
         _custom_vlm_instance = CustomVLMLLM()
+    # Debug Singleton Identity
+    print(f"DEBUG: Accessing VLM Model Instance ID: {id(_custom_vlm_instance)}")
     return _custom_vlm_instance
 
-async def _maybe_handle_multimodal_and_augment(agent_input, max_new_tokens=64, model_name=None):
+async def _maybe_handle_multimodal_and_augment(agent_input, max_new_tokens=60, model_name=None):
     """
-    Helper function to check if input contains an image and invoke VLM if so.
-    Also handles RAG retrieval BEFORE VLM analysis if the agent name contains "RAG".
+    Helper function to check if input contains an image and invoke VLM.
+    Integrates with RAG if 'rag' is in the agent name.
     """
     # Check if we have an image path in the input
     image_path = None
@@ -457,7 +419,7 @@ async def _maybe_handle_multimodal_and_augment(agent_input, max_new_tokens=64, m
     if image_path:
         print(f"Multimodal input detected! Image path: {image_path}")
         
-        # Check if RAG should be enabled (based on agent name)
+        # Check if RAG should be enabled
         use_rag = False
         agent_name = ""
         if hasattr(agent_input, 'agent_config') and agent_input.agent_config:
@@ -466,134 +428,359 @@ async def _maybe_handle_multimodal_and_augment(agent_input, max_new_tokens=64, m
             else:
                 agent_name = getattr(agent_input.agent_config, 'agent_name', '')
             
-            # Enable RAG if agent name contains "RAG" (case insensitive)
             if agent_name and 'rag' in agent_name.lower():
                 use_rag = True
-                print(f"✅ RAG enabled for agent: {agent_name}")
         
-        # Step 1: Retrieve relevant images if RAG is enabled (BEFORE VLM)
-        rag_context = ""
+        # Also enable RAG if user explicitly mentions it or asks a detailed question
+        user_text = ""
+        if isinstance(agent_input.input, dict):
+            user_text = agent_input.input.get('text', '') or agent_input.input.get('messages', '')
+        else:
+            user_text = getattr(agent_input.input, 'messages', '')
+        
+        # Flatten user_text if it's a list of LangChain messages
+        search_text = ""
+        if isinstance(user_text, list):
+            for msg in user_text:
+                if hasattr(msg, 'content'):
+                    search_text += f" {msg.content}"
+                else:
+                    search_text += f" {str(msg)}"
+        elif isinstance(user_text, str):
+            search_text = user_text
+        
+        if not use_rag and '@rag' in search_text.lower():
+            use_rag = True
+            print("✅ RAG enabled via @rag mention in prompt")
+        
+        # Check for MCP flag
+        use_mcp = False
+        if agent_name and 'rag' in agent_name.lower() and 'mcp' in agent_name.lower():
+            use_mcp = True
+            print("✅ RAG via Supabase MCP enabled")
+
+        if use_rag:
+            print(f"✅ RAG enabled for analysis")
+
+        # Step 1: Native Retrieval (Fast Local Vector Search)
+        retrieved_images = []
         if use_rag:
             try:
+                # Fast local ID lookup (Synchronous, fast)
                 from microservice.rag.service.rag._image_rag_utils import retrieval_by_image
-                
-                print(f"🔍 [Step 1/3] Retrieving similar images from database...")
-                
-                # Retrieve top 3 similar images based on the uploaded image
-                retrieved_images = retrieval_by_image(
-                    image_path=image_path,
-                    top_k=3,
-                    category_filter=None
-                )
-                
-                if retrieved_images:
-                    print(f"✅ Retrieved {len(retrieved_images)} similar images")
-                    print("\n" + "="*80)
-                    print("📊 RAG RETRIEVAL RESULTS:")
-                    print("="*80)
-                    
-                    # Build simplified context for VLM
-                    rag_descriptions = []
-                    for i, (file_id, score, metadata) in enumerate(retrieved_images, 1):
-                        caption = metadata.get('caption_raw', 'N/A')
-                        facts = metadata.get('facts', 'N/A')
-                        category = metadata.get('category', 'N/A')
-                        
-                        # Terminal debug output
-                        print(f"\n  [{i}] Image ID: {file_id}")
-                        print(f"      Similarity Score: {score:.4f}")
-                        print(f"      Category: {category}")
-                        print(f"      Caption: {caption}")
-                        if facts and facts != 'N/A':
-                            print(f"      Facts: {facts}")
-                        
-                        # Extract simple description from facts if available
-                        if facts and facts != 'N/A' and isinstance(facts, dict):
-                            # Extract only the object/subject info (q1) and action (q2)
-                            objects = facts.get('q1', '')
-                            action = facts.get('q2', '')
-                            if objects or action:
-                                simple_fact = f"{objects}. {action}".strip()
-                                rag_descriptions.append(f"{caption} ({simple_fact})")
-                            else:
-                                rag_descriptions.append(caption)
-                        else:
-                            rag_descriptions.append(caption)
-                    
-                    # Create concise context
-                    rag_context = "Similar scenes: " + "; ".join(rag_descriptions[:2])  # Only use top 2
-                    
-                    print("\n" + "="*80)
-                    print("📝 RAG CONTEXT TO BE PASSED TO VLM:")
-                    print("="*80)
-                    print(rag_context)
-                    print("="*80 + "\n")
-                else:
-                    print("⚠️ No similar images retrieved")
+                retrieved_images = retrieval_by_image(image_path, top_k=1)
             except Exception as e:
-                print(f"⚠️ RAG retrieval failed: {e}")
-                import traceback
-                traceback.print_exc()
+                print(f"Error in native RAG: {e}")
+
+        # Step 2: PARALLEL EXECUTION (MCP I/O + VLM GPU)
+        from concurrent.futures import ThreadPoolExecutor
         
-        # Step 2: Invoke VLM to generate basic image caption
-        print("🔍 [Step 2/3] Generating basic image caption with VLM...")
+        rag_context = ""
+        mcp_records = []
+        use_mcp_flag = False
+        vlm_analysis = ""
+        
+        # Helper wrapper for thread
+        def _execute_mcp_logic_safe_wrapper():
+            return _fetch_mcp_enrichment(agent_name, retrieved_images)
+
+        def _execute_vlm_logic_safe_wrapper():
+            print(f"   🔍 [Step 2/3] Generating basic image caption with VLM...")
+            vlm_instance = get_custom_vlm_model()
+            try:
+                return vlm_instance.invoke_with_image(image_path, max_new_tokens=60)
+            except Exception as e:
+                print(f"   ⚠️ VLM Generation Failed: {e}")
+                return "Analisis visual tidak tersedia."
+
+        import time
+        t_start_parallel = time.time()
+        print("   🚀 Starting Parallel Execution (VLM + MCP)...")
+        
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            future_mcp = executor.submit(_execute_mcp_logic_safe_wrapper)
+            future_vlm = executor.submit(_execute_vlm_logic_safe_wrapper)
             
-        print("Using Custom VLM...")
-        vlm = get_custom_vlm_model()
+            # Wait for both to complete
+            vlm_analysis = future_vlm.result()
+            t_vlm_done = time.time()
+            print(f"   ⏱️ [Performance] VLM Finished in {t_vlm_done - t_start_parallel:.2f}s")
+            
+            try:
+                rag_context, mcp_records, use_mcp_flag = future_mcp.result(timeout=15)
+            except Exception as e:
+                print(f"   ⚠️ MCP Parallel Fetch Failed/Timed out: {e}")
+                rag_context = ""
+                mcp_records = []
+                use_mcp_flag = False # Ensure flag is reset on timeout/error
+            
+            t_mcp_done = time.time()
+            print(f"   ⏱️ [Performance] MCP Finished in {t_mcp_done - t_start_parallel:.2f}s")
+            print(f"   ⏱️ [Performance] Total Parallel Block: {max(t_vlm_done, t_mcp_done) - t_start_parallel:.2f}s")
+
+            # AGGRESSIVE MEMORY CLEANUP
+            import torch
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+                print("   🧹 CUDA Cache Cleared between Steps")
+
+        # Step 3: Construct Final Prompt
+        print("   🔍 [Step 3/3] Building context for Agent LLM...")
         
-        # Get user's original query (will be used by Agent LLM, not VLM)
-        user_query = ""
-        if isinstance(agent_input.input, dict):
-            user_query = agent_input.input.get('text', '') or agent_input.input.get('messages', '')
-        else:
-            user_query = getattr(agent_input.input, 'messages', '')
-        
-        print(f"\n💬 User Query: {user_query}\n")
-        
-        # VLM just generates basic caption (no user question, no RAG context)
-        vlm_caption = vlm.invoke_with_image(
-            image_path, 
-            max_new_tokens=max_new_tokens
-        )
-        
-        print("\n" + "="*80)
-        print("🎯 VLM CAPTION (Raw Output):")
-        print("="*80)
-        print(vlm_caption)
-        print("="*80 + "\n")
-        
-        # Step 3: Build context for Agent LLM
-        print("🔍 [Step 3/3] Building context for Agent LLM...")
-        
-        # Build rich context with VLM output + RAG results (if available)
         context_parts = []
         
-        # Add VLM caption without label (clean format for frontend)
-        context_parts.append(f"Image shows: {vlm_caption}")
-        
-        # Add RAG results if available
+        # Build Natural Language Context
+        rag_instruction = ""
         if rag_context:
-            context_parts.append(f"Additional context: {rag_context}")
+             rag_instruction = (
+                f"INFORMASI DETIL GAMBAR (SUMBER TERPERCAYA):\n{rag_context}\n\n"
+                "⚠️ INSTRUKSI MENJAWAB:\n"
+                "1. Gunakan informasi di atas untuk menjawab dengan LENGKAP dan MENDETAIL.\n"
+                "2. SEBUTKAN SECARA SPESIFIK: Warna, Pakaian, Objek, dan Aktivitas yang tercatat di data.\n"
+                "3. JANGAN mengaku mendapat info dari database, tapi ceritakan seolah Anda melihatnya sendiri.\n"
+                "4. Jika ada konflik antara analisis visual VLM dan data di atas, PRIORITASKAN data di atas.\n"
+                "5. Berikan deskripsi yang hidup, akurat, dan kaya informasi (jangan terlalu singkat)."
+             )
+             context_parts.append(rag_instruction)
         
-        # Combine all context
+        context_parts.append(f"\nANALISIS VISUAL TAMBAHAN (VLM): {vlm_analysis}")
+        
         full_context = "\n\n".join(context_parts)
         
-        print("\n" + "="*80)
-        print("📝 FULL CONTEXT FOR AGENT LLM:")
-        print("="*80)
-        print(full_context)
-        print("="*80 + "\n")
-        
-        # Pass context to Agent LLM
+        # Modify Agent Input
         if isinstance(agent_input.input, dict):
             agent_input.input['context'] = f"{agent_input.input.get('context', '')}\n\n{full_context}"
         else:
             current_context = getattr(agent_input.input, 'context', '')
             setattr(agent_input.input, 'context', f"{current_context}\n\n{full_context}")
         
-        # Return agent_input and the raw VLM caption (for logging only, not for display)
-        return agent_input, vlm_caption
+        # PERFORMANCE FIX: Force cleanup to prevent slowdowns over time
+        import gc
+        import torch
+        gc.collect()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+            
+        print("🧹 Memory cleanup executed.")
+        
+        return agent_input, vlm_analysis, use_mcp_flag
 
+    return agent_input, None, False
 
-    # No image detected, return as-is with no caption
-    return agent_input, None
+# ==================================================================================
+# HELPER: PARALLEL MCP FETCHING
+# ==================================================================================
+
+def _fetch_mcp_enrichment(agent_name, retrieved_images):
+    """
+    Standalone function to handle the complex MCP SQL retrieval, parsing, and formatting.
+    Designed to run in a background thread.
+    Returns: (formatted_context_string, raw_records_list, is_mcp_used_bool)
+    """
+    import json
+    import re
+    import ast
+    import os
+    
+    rag_context = ""
+    mcp_records = []
+    use_mcp = False
+
+    # Check if we should run MCP
+    # Only use MCP if 'rag' AND 'mcp' are in the agent name
+    if not (agent_name and "rag" in agent_name.lower() and "mcp" in agent_name.lower()):
+         # If simple RAG, convert native tuples to basic context
+         if retrieved_images:
+            try:
+                desc_list = []
+                for item in retrieved_images:
+                    # Handle tuple (id, score, meta) or dict
+                    if isinstance(item, tuple) and len(item) > 2:
+                        meta = item[2]
+                        caption = meta.get('caption', 'No description')
+                        desc_list.append(caption)
+                    elif isinstance(item, dict):
+                         meta = item.get('metadata', item)
+                         caption = meta.get('caption', 'No description')
+                         desc_list.append(caption)
+                
+                if desc_list:
+                    rag_context = "\n".join([f"[Referensi Visual {i+1}]: {d}" for i, d in enumerate(desc_list)])
+            except: pass
+         return rag_context, mcp_records, use_mcp
+
+    # MCP Logic
+    try:
+        print(f"   🔍 [Parallel] Retrieving similar images via Supabase MCP...")
+        
+        # Get Project ID (Hardcoded for stability)
+        project_id = "wxunkovembyfyeocdxnh" 
+
+        if not retrieved_images:
+            return "Tidak ada gambar serupa yang ditemukan.", [], True
+
+        # Extract Filenames for SQL
+        target_filenames = []
+        
+        # Robust ID Extraction
+        for item in retrieved_images:
+            try:
+                raw_id = "unknown"
+                if isinstance(item, tuple) and len(item) > 0:
+                     # ID is usually the first element in (id, score, metadata)
+                     raw_id = item[0]
+                elif isinstance(item, dict):
+                     raw_id = item.get('id', 'unknown')
+                
+                if raw_id and raw_id != "unknown":
+                    # Clean ID
+                    clean_id = str(raw_id).replace('indoor_', '').replace('outdoor_', '').replace('street_', '')
+                    target_filenames.append(clean_id)
+            except: continue
+        
+        if not target_filenames:
+             return "", [], True
+
+        formatted_ids = ",".join([f"'{fid}'" for fid in target_filenames])
+        
+        # Dynamic MCP Client 
+        # We need to create a temporary client connection since we are in a thread
+        from langchain_mcp_adapters.client import MultiServerMCPClient
+        
+        # Port 10399 is the robust one
+        # Define Async Worker
+        async def run_mcp_safe():
+            mcp_port = 10399
+            print(f"   💓 [Parallel] Connecting to Supabase MCP at port {mcp_port}...")
+            async with MultiServerMCPClient(
+                {"Supabase MCP ": {"url": f"http://localhost:{mcp_port}/sse", "transport": "sse"}}
+            ) as client:
+                print(f"   ✅ [Parallel] Connected to MCP Server.")
+                
+                # Get LangChain Tools
+                tools = client.get_tools()
+                sql_tool = next((t for t in tools if t.name == "execute_sql"), None)
+                
+                if not sql_tool:
+                    print(f"   ⚠️ Tool 'execute_sql' not found. Available: {[t.name for t in tools]}")
+                    return []
+
+                print(f"   Note: Fetching detailed facts for IDs: {formatted_ids[:50]}...")
+            
+                sql_query = f"""
+                SELECT * FROM image_indoor WHERE image_id IN ({formatted_ids})
+                UNION ALL
+                SELECT * FROM image_outdoor WHERE image_id IN ({formatted_ids})
+                UNION ALL
+                SELECT * FROM image_street WHERE image_id IN ({formatted_ids})
+                """
+                
+                # Invoke LangChain Tool
+                return await sql_tool.ainvoke({"query": sql_query, "project_id": project_id})
+
+        # Initialize (Async Loop inside Thread)
+        import asyncio
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        
+        try:
+            result = loop.run_until_complete(run_mcp_safe())
+            use_mcp = True
+            
+            # --- Parsing Logic ---
+            if isinstance(result, list):
+                mcp_records = result
+            else:
+                 # Robust Text Parsing
+                target_str = str(result)
+                if hasattr(result, 'content'): target_str = str(result.content)
+                
+                match = re.search(r'\[.*\]', target_str, re.DOTALL)
+                raw_data = []
+                
+                if match:
+                    candidate = match.group(0)
+                    try: raw_data = json.loads(candidate)
+                    except:
+                        try:
+                            cleaned = candidate.replace('\\"', '"').replace('\\n', ' ')
+                            raw_data = json.loads(cleaned)
+                        except:
+                            try: raw_data = ast.literal_eval(candidate)
+                            except: pass
+                    
+                    if not raw_data:
+                        try:
+                             wrapped = f'"{candidate}"' 
+                             s1 = json.loads(wrapped)
+                             if isinstance(s1, str): raw_data = json.loads(s1)
+                        except: pass
+                
+                # Double Encoded Check
+                if isinstance(raw_data, str):
+                    try: raw_data = json.loads(raw_data)
+                    except: 
+                         try: raw_data = ast.literal_eval(raw_data)
+                         except: pass
+
+                # Validate
+                if isinstance(raw_data, list):
+                     for rec in raw_data:
+                         if isinstance(rec, dict):
+                             # Fact Normalization
+                             final_facts = {}
+                             raw_facts = rec.get('facts') or rec.get('image_facts') or rec.get('facts_json')
+                             if isinstance(raw_facts, str):
+                                 try: 
+                                      if raw_facts.strip().startswith('{'): raw_facts = json.loads(raw_facts)
+                                 except: pass
+                             
+                             if isinstance(raw_facts, dict):
+                                 for k, v in raw_facts.items():
+                                     final_facts[k] = v
+                                     if k.startswith('Q'): final_facts[k.lower()] = v
+                                     if k.startswith('q'): final_facts[k.upper()] = v
+                             
+                             rec['facts'] = final_facts
+                             mcp_records.append(rec)
+            
+            if mcp_records:
+                print(f"   ✅ [Parallel] MCP Success! {len(mcp_records)} records.")
+            else:
+                print(f"   ⚠️ [Parallel] MCP Validated but NO records parsed.")
+
+        finally:
+            # Cleanup loop
+            loop.close()
+
+    except Exception as e:
+        print(f"   ⚠️ [Parallel] MCP Execution Error: {e}")
+        # Fallback to simple descriptions
+        desc_list = []
+        for item in retrieved_images:
+             try:
+                 if isinstance(item, tuple): desc_list.append(item[2].get('caption'))
+                 else: desc_list.append(item.get('caption'))
+             except: pass
+        rag_context = "\n".join(str(d) for d in desc_list)
+        return rag_context, [], use_mcp
+
+    # Format RAG Context (Final)
+    rag_list = []
+    for i, item in enumerate(mcp_records, 1):
+        caption = item.get('caption') or item.get('caption_raw') or "No Caption"
+        facts = item.get('facts', {})
+        
+        fact_desc = ""
+        if facts:
+             q1 = facts.get('Q1') or facts.get('q1') or "-"
+             q2 = facts.get('Q2') or facts.get('q2') or "-"
+             q3 = facts.get('Q3') or facts.get('q3') or "-"
+             fact_desc = f"Detail: {q1} | Konteks: {q2} | Ciri: {q3}"
+        else:
+             fact_desc = "Detail tidak tersedia."
+
+        rag_list.append(f"[Referensi Visual {i}]: {caption}.. {fact_desc}")
+
+    rag_context = "\n".join(rag_list)
+    return rag_context, mcp_records, use_mcp

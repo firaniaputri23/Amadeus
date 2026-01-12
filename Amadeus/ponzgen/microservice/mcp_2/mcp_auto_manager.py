@@ -92,21 +92,68 @@ class MCPAutoManager:
         parsed_tools = []
         
         for tool in tools_data:
+            tool_name = tool.get('name', 'unknown')
             if not tool.get('versions'):
                 continue
                 
-            latest_version = tool['versions'][-1]
-            if not latest_version.get('released'):
-                continue
+            # Iterate versions from newest to oldest to find a valid one
+            selected_version = None
+            versions = tool.get('versions', [])
+            
+            for version in reversed(versions):
+                if not version.get('released'):
+                    continue
+                    
+                released = version['released']
+                args = released.get('args', '')
                 
-            released = latest_version['released']
-            print(released)
-            tool_name = tool.get('name', 'unknown')
+                # Validation Logic
+                if "python" in args.lower() and ".py" in args.lower():
+                    # Extract file path to check if it exists
+                    try:
+                        # Assuming format "python /path/to/file.py"
+                        parts = args.split()
+                        for part in parts:
+                            if part.endswith('.py'):
+                                # Handle absolute or relative paths
+                                script_path = Path(part)
+                                if script_path.exists():
+                                    selected_version = version
+                                    break
+                                else:
+                                    print(f"⚠️ Skipping version with missing script: {part}")
+                    except Exception:
+                        pass # If parsing fails, just fall through (might be complex command)
+                else:
+                    # Non-python command (e.g. npx), assume valid
+                    selected_version = version
+                
+                if selected_version:
+                    break
+            
+            if not selected_version:
+                print(f"⚠️ No valid version found for tool {tool_name}")
+                continue
+
+            released = selected_version['released']
+            print(f"Selected version args: {released.get('args')}")
             
             # Build command
             port = released.get('port', '10000')
+            
+            # HARD FIX: Override Supabase port to avoid stale 10396
+            if "Supabase" in tool_name:
+                print(f"🔄 Overriding port for {tool_name} from {port} to 10399")
+                port = "10399"
+            
             print(port)
             args = released.get('args', '')
+            
+            # Windows/NPX Fix: Use npx.cmd explicitly on Windows
+            if os.name == 'nt' and args.strip().startswith("npx"):
+                if not args.strip().startswith("npx.cmd"):
+                     args = args.replace("npx", "npx.cmd", 1)
+            
             env_vars = released.get('env', {})
             env_flags = " ".join([f"-e {key} {value}" for key, value in env_vars.items()])
             command = f"mcp-proxy --sse-port={port} {env_flags} -- {args}".strip()
@@ -160,7 +207,8 @@ class MCPAutoManager:
             # Try different methods to kill processes
             if os.name == 'nt':  # Windows
                 try:
-                    subprocess.run(["taskkill", "/f", "/im", "mcp-proxy.exe"], capture_output=True)
+                    # Use /T to kill child processes (like node.exe started by mcp-proxy)
+                    subprocess.run(["taskkill", "/f", "/t", "/im", "mcp-proxy.exe"], capture_output=True)
                 except Exception as e:
                     print(f"⚠️ Windows process cleanup failed: {e}")
             else:  # Unix/Linux/macOS
@@ -209,8 +257,44 @@ class MCPAutoManager:
         timer = threading.Timer(duration, stop_logging)
         timer.start()
     
+    def _kill_process_on_port(self, port):
+        """Aggressively kill any process holding the specified port."""
+        if not port: return
+        
+        print(f"🔍 Checking if port {port} is free...")
+        if os.name == 'nt':
+            try:
+                # Find PID using netstat
+                # Format: TCP    0.0.0.0:11629          0.0.0.0:0              LISTENING       23544
+                cmd = f"netstat -aon | findstr :{port}"
+                output = subprocess.check_output(cmd, shell=True, text=True)
+                
+                if output:
+                    print(f"⚠️ Port {port} is occupied. Cleaning up...")
+                    killed_pids = set()
+                    for line in output.splitlines():
+                        parts = line.strip().split()
+                        # PID is usually the last element
+                        if len(parts) > 4:
+                            pid = parts[-1]
+                            if pid not in killed_pids and pid != "0":
+                                try:
+                                    print(f"🔫 Killing blocking process PID: {pid}")
+                                    subprocess.run(f"taskkill /F /PID {pid}", shell=True, capture_output=True)
+                                    killed_pids.add(pid)
+                                except: pass
+                    time.sleep(1) # Give OS a moment to release
+            except subprocess.CalledProcessError:
+                # findstr returns error if no match found (which is good)
+                pass
+            except Exception as e:
+                print(f"⚠️ Port cleanup warning: {e}")
+
     def _start_single_tool(self, tool: Dict[str, Any]) -> Optional[subprocess.Popen]:
         """Start a single MCP tool."""
+        # PRE-FLIGHT CHECK: Kill anything on this port
+        self._kill_process_on_port(tool.get('port'))
+        
         tool_name = tool['name']
         command = tool['command']
         
@@ -263,13 +347,24 @@ class MCPAutoManager:
                 log_handle = open(log_file, 'w')
                 
                 # Start process with log file
-                process = subprocess.Popen(
-                    command.split(),
-                    env=env,
-                    stdout=log_handle,
-                    stderr=subprocess.STDOUT,
-                    text=True
-                )
+                # Proper subprocess call for Windows vs Unix
+                if os.name == 'nt':
+                    process = subprocess.Popen(
+                        command, # Pass full string
+                        env=env,
+                        shell=True, # Required for Windows command resolution like npx.cmd or resolving mcp-proxy from PATH
+                        stdout=log_handle,
+                        stderr=subprocess.STDOUT,
+                        text=True
+                    )
+                else:
+                    process = subprocess.Popen(
+                        command.split(),
+                        env=env,
+                        stdout=log_handle,
+                        stderr=subprocess.STDOUT,
+                        text=True
+                    )
                 
                 # Capture logs for 1 minute only
                 self._capture_logs_for_duration(process, log_file, 60)
@@ -279,12 +374,21 @@ class MCPAutoManager:
                 print("⚠️ Will redirect output to /dev/null")
                 
                 # If we can't open the log file, redirect to /dev/null
-                process = subprocess.Popen(
-                    command.split(),
-                    env=env,
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL
-                )
+                if os.name == 'nt':
+                     process = subprocess.Popen(
+                        command,
+                        env=env,
+                        shell=True,
+                        stdout=subprocess.DEVNULL,
+                        stderr=subprocess.DEVNULL
+                    )
+                else:
+                    process = subprocess.Popen(
+                        command.split(),
+                        env=env,
+                        stdout=subprocess.DEVNULL,
+                        stderr=subprocess.DEVNULL
+                    )
             
             print(f"✅ Started {tool_name} (PID: {process.pid})")
             return process
@@ -413,6 +517,23 @@ class MCPAutoManager:
             print(f"{status} {name}")
             print(f"   Port: {port} {port_status}")
             print(f"   Log: {log_status}")
+            
+            # Print logs for unhealthy tools
+            if not result['is_healthy']:
+                log_path = self.logs_dir / f"{name.replace(' ', '_')}.log"
+                if log_path.exists():
+                    try:
+                        print("   ⚠️ Recent Logs:")
+                        with open(log_path, 'r', encoding='utf-8', errors='replace') as f:
+                            lines = f.readlines()
+                            # Print last 10 lines
+                            for line in lines[-10:]:
+                                print(f"      {line.strip()}")
+                    except Exception as e:
+                        print(f"      Error reading logs: {e}")
+                else:
+                    print(f"      Log file not found at {log_path}")
+            
             print()
     
     def _stop_single_tool(self, tool_name: str):
