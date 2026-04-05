@@ -423,7 +423,7 @@ async def list_models():
     Returns local and cloud models with their capabilities.
     """
     # Read from config file
-    config_path = BASE_DIR / "config" / "maiarouter_llm_list.json"
+    config_path = BASE_DIR / "config" / "openrouter_llm_list.json"
     try:
         with open(config_path, 'r', encoding='utf-8') as f:
             import json

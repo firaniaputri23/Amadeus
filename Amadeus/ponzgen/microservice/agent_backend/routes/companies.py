@@ -48,8 +48,7 @@ async def is_predefined_super_admin(user_id: UUID, supabase: Client) -> Tuple[bo
             supabase.table("companies")
             .select("company_id")
             .eq("name", "Predefined")
-            .execute()
-        )
+            .execute())
         
         if not predefined_company_response.data:
             return False, None
@@ -63,8 +62,7 @@ async def is_predefined_super_admin(user_id: UUID, supabase: Client) -> Tuple[bo
             .eq("user_id", user_id)
             .eq("company_id", predefined_company_id)
             .eq("role_id", SUPER_ADMIN_ROLE_ID)  # role_id 1 is super admin
-            .execute()
-        )
+            .execute())
         
         return bool(admin_check_response.data), predefined_company_id
     except Exception as e:
@@ -78,8 +76,7 @@ async def has_company_admin_access(user_id: UUID, company_id: UUID, supabase: Cl
             .select("role_id")
             .eq("user_id", user_id)
             .eq("company_id", str(company_id))
-            .execute()
-        )
+            .execute())
         
         if not user_company_response.data:
             return False, None
@@ -119,8 +116,7 @@ async def create_company(
                     "name": company.name,
                     "description": company.description
                 })
-                .execute()
-            )
+                .execute())
         except Exception as e:
             raise InternalServerError(f"Error creating company: {str(e)}")
         
@@ -137,8 +133,7 @@ async def create_company(
                 supabase.table("roles")
                 .select("role_id")
                 .eq("role_name", "super admin")
-                .execute()
-            )
+                .execute())
         except Exception as e:
             raise InternalServerError(f"Error fetching admin role: {str(e)}")
         
@@ -156,8 +151,7 @@ async def create_company(
                     "company_id": created_company["company_id"],
                     "role_id": admin_role_id
                 })
-                .execute()
-            )
+                .execute())
         except Exception as e:
             raise InternalServerError(f"Error adding user to company: {str(e)}")
         
@@ -197,8 +191,7 @@ async def get_companies(
                 supabase.table("user_companies")
                 .select("company_id, role_id")
                 .eq("user_id", user_id)
-                .execute()
-            )
+                .execute())
         except Exception as e:
             raise InternalServerError(f"Error fetching user companies: {str(e)}")
         
@@ -214,8 +207,7 @@ async def get_companies(
                 supabase.table("companies")
                 .select("*")
                 .in_("company_id", company_ids)
-                .execute()
-            )
+                .execute())
         except Exception as e:
             raise InternalServerError(f"Error fetching companies: {str(e)}")
         
@@ -254,8 +246,7 @@ async def get_company(
                 supabase.table("companies")
                 .select("*")
                 .eq("company_id", str(company_id))
-                .execute()
-            )
+                .execute())
         except Exception as e:
             raise InternalServerError(f"Error fetching company: {str(e)}")
         
@@ -313,8 +304,7 @@ async def update_company(
                     "description": company.description
                 })
                 .eq("company_id", str(company_id))
-                .execute()
-            )
+                .execute())
         except Exception as e:
             raise InternalServerError(f"Error updating company: {str(e)}")
         
@@ -347,8 +337,7 @@ async def delete_company(
                 supabase.table("companies")
                 .select("name")
                 .eq("company_id", str(company_id))
-                .execute()
-            )
+                .execute())
         except Exception as e:
             raise InternalServerError(f"Error checking company: {str(e)}")
         
@@ -386,8 +375,7 @@ async def delete_company(
                 supabase.table("agents")
                 .select("agent_id")
                 .eq("company_id", str(company_id))
-                .execute()
-            )
+                .execute())
         except Exception as e:
             raise InternalServerError(f"Error checking associated agents: {str(e)}")
         
@@ -414,8 +402,7 @@ async def delete_company(
                 supabase.table("companies")
                 .delete()
                 .eq("company_id", str(company_id))
-                .execute()
-            )
+                .execute())
         except Exception as e:
             raise InternalServerError(f"Error deleting company: {str(e)}")
         
@@ -462,8 +449,7 @@ async def get_company_users(
                 supabase.table("user_companies")
                 .select("user_id, role_id")
                 .eq("company_id", str(company_id))
-                .execute()
-            )
+                .execute())
         except Exception as e:
             raise InternalServerError(f"Error fetching company users: {str(e)}")
         
@@ -479,8 +465,7 @@ async def get_company_users(
                 supabase.table("roles")
                 .select("role_id, role_name")
                 .in_("role_id", role_ids)
-                .execute()
-            )
+                .execute())
         except Exception as e:
             raise InternalServerError(f"Error fetching role information: {str(e)}")
         
@@ -540,8 +525,7 @@ async def add_user_to_company(
                 supabase.table("roles")
                 .select("role_id")
                 .eq("role_id", user_company.role_id)
-                .execute()
-            )
+                .execute())
         except Exception as e:
             raise InternalServerError(f"Error checking role: {str(e)}")
         
@@ -558,8 +542,7 @@ async def add_user_to_company(
                 .select("*")
                 .eq("user_id", str(user_company.user_id))
                 .eq("company_id", str(company_id))
-                .execute()
-            )
+                .execute())
         except Exception as e:
             raise InternalServerError(f"Error checking existing user role: {str(e)}")
         
@@ -571,8 +554,7 @@ async def add_user_to_company(
                     .update({"role_id": user_company.role_id})
                     .eq("user_id", str(user_company.user_id))
                     .eq("company_id", str(company_id))
-                    .execute()
-                )
+                    .execute())
             except Exception as e:
                 raise InternalServerError(f"Error updating user role: {str(e)}")
             
@@ -590,8 +572,7 @@ async def add_user_to_company(
                         "company_id": str(company_id),
                         "role_id": user_company.role_id
                     })
-                    .execute()
-                )
+                    .execute())
             except Exception as e:
                 raise InternalServerError(f"Error adding user to company: {str(e)}")
             
@@ -642,8 +623,7 @@ async def remove_user_from_company(
                 supabase.table("companies")
                 .select("name")
                 .eq("company_id", str(company_id))
-                .execute()
-            )
+                .execute())
         except Exception as e:
             raise InternalServerError(f"Error fetching company information: {str(e)}")
         
@@ -656,8 +636,7 @@ async def remove_user_from_company(
                     .select("role_id")
                     .eq("company_id", str(company_id))
                     .eq("user_id", user_id)
-                    .execute()
-                )
+                    .execute())
             except Exception as e:
                 raise InternalServerError(f"Error checking user role: {str(e)}")
             
@@ -672,8 +651,7 @@ async def remove_user_from_company(
                         .eq("company_id", str(company_id))
                         .eq("role_id", your_role_id)
                         .neq("user_id", user_id)
-                        .execute()
-                    )
+                        .execute())
                 except Exception as e:
                     raise InternalServerError(f"Error checking other admins: {str(e)}")
                 
@@ -690,8 +668,7 @@ async def remove_user_from_company(
                 .delete()
                 .eq("user_id", str(user_id_to_remove))
                 .eq("company_id", str(company_id))
-                .execute()
-            )
+                .execute())
         except Exception as e:
             raise InternalServerError(f"Error removing user from company: {str(e)}")
         

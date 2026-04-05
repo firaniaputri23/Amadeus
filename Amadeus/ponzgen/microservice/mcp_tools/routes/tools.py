@@ -297,8 +297,7 @@ async def create_tool(
                 .select("role_id")
                 .eq("user_id", user_id)
                 .eq("company_id", str(tool.company_id))
-                .execute()
-            )
+                .execute())
             
             if not user_company_response.data:
                 raise HTTPException(status_code=403, detail="You don't have access to this company")
@@ -309,8 +308,7 @@ async def create_tool(
                 supabase.table("roles")
                 .select("role_name")
                 .eq("role_id", role_id)
-                .execute()
-            )
+                .execute())
 
             if not role_response.data or role_response.data[0]["role_name"] not in ["super admin", "admin", "staff"]:
                 raise HTTPException(status_code=403, detail="You don't have permission to create tools for this company")
@@ -320,8 +318,7 @@ async def create_tool(
             supabase.table("tools")
             .select("tool_id")
             .eq("name", tool.name)
-            .execute()
-        )
+            .execute())
         
         if name_check_response.data:
             raise HTTPException(status_code=400, detail="A tool with this name already exists")
@@ -348,8 +345,7 @@ async def create_tool(
         response = (
             supabase.table("tools")
             .insert(insert_data)
-            .execute()
-        )
+            .execute())
         
         # Check if insert was successful
         if not response.data:
@@ -411,8 +407,7 @@ async def get_tool(
         supabase.table("tools_with_decrypted_keys")
         .select("*")
         .eq("tool_id", str(tool_id))
-        .execute()
-    )
+        .execute())
     
     if not response.data:
         raise HTTPException(status_code=404, detail="Tool not found")
@@ -467,8 +462,7 @@ async def update_tool(
         .select("tool_id")
         .eq("name", tool.name)
         .neq("tool_id", str(tool_id))
-        .execute()
-    )
+        .execute())
     
     if name_check_response.data:
         raise HTTPException(status_code=400, detail="A tool with this name already exists")
@@ -486,8 +480,7 @@ async def update_tool(
             "on_status": tool.on_status
         })
         .eq("tool_id", str(tool_id))
-        .execute()
-    )
+        .execute())
     
     if not response.data:
         raise HTTPException(status_code=404, detail="Tool not found")
@@ -519,8 +512,7 @@ async def delete_tool(
         supabase.table("agents")
         .select("agent_id, agent_name")
         .contains("tools", [str(tool_id)])
-        .execute()
-    )
+        .execute())
     
     if agents_response.data:
         agent_names = [agent["agent_name"] for agent in agents_response.data]
@@ -534,8 +526,7 @@ async def delete_tool(
         supabase.table("tools")
         .delete()
         .eq("tool_id", str(tool_id))
-        .execute()
-    )
+        .execute())
     
     if not response.data:
         raise HTTPException(status_code=404, detail="Tool not found")
@@ -613,8 +604,7 @@ async def clone_tool(
             supabase.table("tools")
             .select("*")
             .eq("tool_id", str(tool_id))
-            .execute()
-        )
+            .execute())
         
         if not existing_tool_response.data:
             raise HTTPException(status_code=404, detail="Tool not found")
@@ -629,8 +619,7 @@ async def clone_tool(
                 .select("role_id")
                 .eq("user_id", user_id)
                 .eq("company_id", company_id)
-                .execute()
-            )
+                .execute())
 
             if not user_company_response.data:
                 raise HTTPException(status_code=403, detail="You don't have access to this company")
@@ -641,8 +630,7 @@ async def clone_tool(
                 supabase.table("roles")
                 .select("role_name")
                 .eq("role_id", role_id)
-                .execute()
-            )
+                .execute())
 
             if not role_response.data or role_response.data[0]["role_name"] not in ["super admin", "admin", "staff"]:
                 raise HTTPException(status_code=403, detail="You don't have permission to clone tools for this company")
@@ -657,8 +645,7 @@ async def clone_tool(
                 supabase.table("tools")
                 .select("tool_id")
                 .eq("name", clone_name)
-                .execute()
-            )
+                .execute())
             if not name_check_response.data:
                 break
             count += 1
@@ -695,8 +682,7 @@ async def clone_tool(
         response = (
             supabase.table("tools")
             .insert(clone_data)
-            .execute()
-        )
+            .execute())
 
         # Check if insert was successful
         if not response.data:

@@ -1,0 +1,443 @@
+{
+  "available_models": [
+    "custom-vlm",
+    "anthropic/claude-3-7-sonnet-latest",
+    "anthropic/claude-haiku-4-5",
+    "moonshot/kimi-k2-0711-preview",
+    "moonshot/kimi-k2-thinking",
+    "google/gemma-4-26b-a4b-it",
+    "google/gemma-4-31b-it",
+    "qwen/qwen3.6-plus:free",
+    "qwen/qwen3.5-9b",
+    "qwen/qwen3.5-27b",
+    "qwen/qwen3-vl-30b-a3b-thinking",
+    "qwen/qwen3-vl-8b-thinking",
+    "qwen/qwen3-vl-235b-a22b-thinking",
+    "nex-agi/deepseek-v3.1-nex-n1",
+    "deepseek/deepseek-v3.2-speciale",
+    "deepseek/deepseek-v3.2",
+    "deepseek/deepseek-chat-v3.1",
+    "x-ai/grok-4.20-multi-agent",
+    "x-ai/grok-4.20",
+    "anthropic/claude-sonnet-4.6",
+    "anthropic/claude-opus-4.6",
+    "anthropic/claude-opus-4.5",
+    "anthropic/claude-sonnet-4.5",
+    "anthropic/claude-opus-4.1",
+    "google/gemini-3.1-flash-lite-preview",
+    "google/gemini-3.1-pro-preview-customtools",
+    "google/gemini-3.1-pro-preview",
+    "google/gemini-3-flash-preview",
+    "google/gemini-2.5-flash-lite-preview-09-2025",
+    "google/gemini-2.5-flash-lite",
+    "google/gemini-2.5-flash",
+    "google/gemini-2.5-pro",
+    "google/gemini-2.5-pro-preview",
+    "google/gemini-2.5-pro-preview-05-06",
+    "google/gemini-2.0-flash-lite-001",
+    "google/gemini-2.0-flash-001",
+    "openai/gpt-5.4-nano",
+    "openai/gpt-5.4-mini",
+    "openai/gpt-5.4-pro",
+    "openai/gpt-5.4",
+    "openai/gpt-5.3-chat",
+    "openai/gpt-5.3-codex",
+    "openai/gpt-5.2-codex",
+    "openai/gpt-5.2-pro",
+    "openai/gpt-5.2",
+    "openai/gpt-5.1-codex-max",
+    "openai/gpt-5.1",
+    "openai/gpt-5.1-chat",
+    "openai/gpt-5.1-codex",
+    "openai/gpt-5.1-codex-mini",
+    "openai/gpt-4",
+    "openai/gpt-4-turbo",
+    "openai/gpt-3.5-turbo"
+  ],
+  "model_info": {
+    "custom-vlm": {
+      "provider": "local",
+      "description": "Local Gemma-2-2b + CLIP vision model",
+      "tool_calling": false,
+      "vision": false,
+      "cost": "free (local)"
+    },
+    "anthropic/claude-3-7-sonnet-latest": {
+      "provider": "openrouter",
+      "description": "Claude 3.7 Sonnet - State of the art balance",
+      "tool_calling": true,
+      "vision": true,
+      "cost": "Paid"
+    },
+    "anthropic/claude-haiku-4-5": {
+      "provider": "openrouter",
+      "description": "Claude Haiku 4.5 - Fast and smart",
+      "tool_calling": true,
+      "vision": true,
+      "cost": "Paid"
+    },
+    "moonshot/kimi-k2-0711-preview": {
+      "provider": "openrouter",
+      "description": "Kimi K2 Preview - Cost effective efficient model",
+      "tool_calling": true,
+      "vision": false,
+      "cost": "Paid"
+    },
+    "moonshot/kimi-k2-thinking": {
+      "provider": "openrouter",
+      "description": "Kimi K2 Thinking - Specialized in reasoning",
+      "tool_calling": true,
+      "vision": false,
+      "cost": "Paid"
+    },
+    "google/gemma-4-26b-a4b-it": {
+      "provider": "openrouter",
+      "description": "Gemma 4 26B A4B Instruct",
+      "tool_calling": true,
+      "vision": false,
+      "cost": "Paid"
+    },
+    "google/gemma-4-31b-it": {
+      "provider": "openrouter",
+      "description": "Gemma 4 31B Instruct",
+      "tool_calling": true,
+      "vision": false,
+      "cost": "Paid"
+    },
+    "qwen/qwen3.6-plus:free": {
+      "provider": "openrouter",
+      "description": "Qwen 3.6 Plus (Free)",
+      "tool_calling": true,
+      "vision": false,
+      "cost": "Free"
+    },
+    "qwen/qwen3.5-9b": {
+      "provider": "openrouter",
+      "description": "Qwen 3.5 9B",
+      "tool_calling": true,
+      "vision": false,
+      "cost": "Paid"
+    },
+    "qwen/qwen3.5-27b": {
+      "provider": "openrouter",
+      "description": "Qwen 3.5 27B",
+      "tool_calling": true,
+      "vision": false,
+      "cost": "Paid"
+    },
+    "qwen/qwen3-vl-30b-a3b-thinking": {
+      "provider": "openrouter",
+      "description": "Qwen 3 VL 30B Thinking",
+      "tool_calling": true,
+      "vision": true,
+      "cost": "Paid"
+    },
+    "qwen/qwen3-vl-8b-thinking": {
+      "provider": "openrouter",
+      "description": "Qwen 3 VL 8B Thinking",
+      "tool_calling": true,
+      "vision": true,
+      "cost": "Paid"
+    },
+    "qwen/qwen3-vl-235b-a22b-thinking": {
+      "provider": "openrouter",
+      "description": "Qwen 3 VL 235B Thinking",
+      "tool_calling": true,
+      "vision": true,
+      "cost": "Paid"
+    },
+    "nex-agi/deepseek-v3.1-nex-n1": {
+      "provider": "openrouter",
+      "description": "DeepSeek V3.1 NEX N1",
+      "tool_calling": true,
+      "vision": false,
+      "cost": "Paid"
+    },
+    "deepseek/deepseek-v3.2-speciale": {
+      "provider": "openrouter",
+      "description": "DeepSeek V3.2 Speciale",
+      "tool_calling": true,
+      "vision": false,
+      "cost": "Paid"
+    },
+    "deepseek/deepseek-v3.2": {
+      "provider": "openrouter",
+      "description": "DeepSeek V3.2",
+      "tool_calling": true,
+      "vision": false,
+      "cost": "Paid"
+    },
+    "deepseek/deepseek-chat-v3.1": {
+      "provider": "openrouter",
+      "description": "DeepSeek Chat V3.1",
+      "tool_calling": true,
+      "vision": false,
+      "cost": "Paid"
+    },
+    "x-ai/grok-4.20-multi-agent": {
+      "provider": "openrouter",
+      "description": "Grok 4.20 Multi-Agent",
+      "tool_calling": true,
+      "vision": false,
+      "cost": "Paid"
+    },
+    "x-ai/grok-4.20": {
+      "provider": "openrouter",
+      "description": "Grok 4.20",
+      "tool_calling": true,
+      "vision": false,
+      "cost": "Paid"
+    },
+    "anthropic/claude-sonnet-4.6": {
+      "provider": "openrouter",
+      "description": "Claude Sonnet 4.6",
+      "tool_calling": true,
+      "vision": true,
+      "cost": "Paid"
+    },
+    "anthropic/claude-opus-4.6": {
+      "provider": "openrouter",
+      "description": "Claude Opus 4.6",
+      "tool_calling": true,
+      "vision": true,
+      "cost": "Paid"
+    },
+    "anthropic/claude-opus-4.5": {
+      "provider": "openrouter",
+      "description": "Claude Opus 4.5",
+      "tool_calling": true,
+      "vision": true,
+      "cost": "Paid"
+    },
+    "anthropic/claude-sonnet-4.5": {
+      "provider": "openrouter",
+      "description": "Claude Sonnet 4.5",
+      "tool_calling": true,
+      "vision": true,
+      "cost": "Paid"
+    },
+    "anthropic/claude-opus-4.1": {
+      "provider": "openrouter",
+      "description": "Claude Opus 4.1",
+      "tool_calling": true,
+      "vision": true,
+      "cost": "Paid"
+    },
+    "google/gemini-3.1-flash-lite-preview": {
+      "provider": "openrouter",
+      "description": "Google Gemini 3.1 Flash Lite Preview",
+      "tool_calling": true,
+      "vision": true,
+      "cost": "Paid"
+    },
+    "google/gemini-3.1-pro-preview-customtools": {
+      "provider": "openrouter",
+      "description": "Google Gemini 3.1 Pro Preview CustomTools",
+      "tool_calling": true,
+      "vision": true,
+      "cost": "Paid"
+    },
+    "google/gemini-3.1-pro-preview": {
+      "provider": "openrouter",
+      "description": "Google Gemini 3.1 Pro Preview",
+      "tool_calling": true,
+      "vision": true,
+      "cost": "Paid"
+    },
+    "google/gemini-3-flash-preview": {
+      "provider": "openrouter",
+      "description": "Google Gemini 3 Flash Preview",
+      "tool_calling": true,
+      "vision": true,
+      "cost": "Paid"
+    },
+    "google/gemini-2.5-flash-lite-preview-09-2025": {
+      "provider": "openrouter",
+      "description": "Google Gemini 2.5 Flash Lite Preview (09-2025)",
+      "tool_calling": true,
+      "vision": true,
+      "cost": "Paid"
+    },
+    "google/gemini-2.5-flash-lite": {
+      "provider": "openrouter",
+      "description": "Google Gemini 2.5 Flash Lite",
+      "tool_calling": true,
+      "vision": true,
+      "cost": "Paid"
+    },
+    "google/gemini-2.5-flash": {
+      "provider": "openrouter",
+      "description": "Google Gemini 2.5 Flash",
+      "tool_calling": true,
+      "vision": true,
+      "cost": "Paid"
+    },
+    "google/gemini-2.5-pro": {
+      "provider": "openrouter",
+      "description": "Google Gemini 2.5 Pro",
+      "tool_calling": true,
+      "vision": true,
+      "cost": "Paid"
+    },
+    "google/gemini-2.5-pro-preview": {
+      "provider": "openrouter",
+      "description": "Google Gemini 2.5 Pro Preview",
+      "tool_calling": true,
+      "vision": true,
+      "cost": "Paid"
+    },
+    "google/gemini-2.5-pro-preview-05-06": {
+      "provider": "openrouter",
+      "description": "Google Gemini 2.5 Pro Preview 05-06",
+      "tool_calling": true,
+      "vision": true,
+      "cost": "Paid"
+    },
+    "google/gemini-2.0-flash-lite-001": {
+      "provider": "openrouter",
+      "description": "Google Gemini 2.0 Flash Lite 001",
+      "tool_calling": true,
+      "vision": true,
+      "cost": "Paid"
+    },
+    "google/gemini-2.0-flash-001": {
+      "provider": "openrouter",
+      "description": "Google Gemini 2.0 Flash 001",
+      "tool_calling": true,
+      "vision": true,
+      "cost": "Paid"
+    },
+    "openai/gpt-5.4-nano": {
+      "provider": "openrouter",
+      "description": "GPT-5.4 Nano",
+      "tool_calling": true,
+      "vision": true,
+      "cost": "Paid"
+    },
+    "openai/gpt-5.4-mini": {
+      "provider": "openrouter",
+      "description": "GPT-5.4 Mini",
+      "tool_calling": true,
+      "vision": true,
+      "cost": "Paid"
+    },
+    "openai/gpt-5.4-pro": {
+      "provider": "openrouter",
+      "description": "GPT-5.4 Pro",
+      "tool_calling": true,
+      "vision": true,
+      "cost": "Paid"
+    },
+    "openai/gpt-5.4": {
+      "provider": "openrouter",
+      "description": "GPT-5.4 Base",
+      "tool_calling": true,
+      "vision": true,
+      "cost": "Paid"
+    },
+    "openai/gpt-5.3-chat": {
+      "provider": "openrouter",
+      "description": "GPT-5.3 Chat",
+      "tool_calling": true,
+      "vision": true,
+      "cost": "Paid"
+    },
+    "openai/gpt-5.3-codex": {
+      "provider": "openrouter",
+      "description": "GPT-5.3 Codex",
+      "tool_calling": true,
+      "vision": false,
+      "cost": "Paid"
+    },
+    "openai/gpt-5.2-codex": {
+      "provider": "openrouter",
+      "description": "GPT-5.2 Codex",
+      "tool_calling": true,
+      "vision": false,
+      "cost": "Paid"
+    },
+    "openai/gpt-5.2-pro": {
+      "provider": "openrouter",
+      "description": "GPT-5.2 Pro",
+      "tool_calling": true,
+      "vision": true,
+      "cost": "Paid"
+    },
+    "openai/gpt-5.2": {
+      "provider": "openrouter",
+      "description": "GPT-5.2 Base",
+      "tool_calling": true,
+      "vision": true,
+      "cost": "Paid"
+    },
+    "openai/gpt-5.1-codex-max": {
+      "provider": "openrouter",
+      "description": "GPT-5.1 Codex Max",
+      "tool_calling": true,
+      "vision": false,
+      "cost": "Paid"
+    },
+    "openai/gpt-5.1": {
+      "provider": "openrouter",
+      "description": "GPT-5.1 Base",
+      "tool_calling": true,
+      "vision": true,
+      "cost": "Paid"
+    },
+    "openai/gpt-5.1-chat": {
+      "provider": "openrouter",
+      "description": "GPT-5.1 Chat",
+      "tool_calling": true,
+      "vision": true,
+      "cost": "Paid"
+    },
+    "openai/gpt-5.1-codex": {
+      "provider": "openrouter",
+      "description": "GPT-5.1 Codex",
+      "tool_calling": true,
+      "vision": false,
+      "cost": "Paid"
+    },
+    "openai/gpt-5.1-codex-mini": {
+      "provider": "openrouter",
+      "description": "GPT-5.1 Codex Mini",
+      "tool_calling": true,
+      "vision": false,
+      "cost": "Paid"
+    },
+    "openai/gpt-4": {
+      "provider": "openrouter",
+      "description": "GPT-4 Base",
+      "tool_calling": true,
+      "vision": true,
+      "cost": "Paid"
+    },
+    "openai/gpt-4-turbo": {
+      "provider": "openrouter",
+      "description": "GPT-4 Turbo",
+      "tool_calling": true,
+      "vision": true,
+      "cost": "Paid"
+    },
+    "openai/gpt-3.5-turbo": {
+      "provider": "openrouter",
+      "description": "GPT-3.5 Turbo",
+      "tool_calling": true,
+      "vision": false,
+      "cost": "Paid"
+    }
+  },
+  "recommendations": {
+    "vision_tasks": "qwen/qwen3-vl-8b-thinking",
+    "tool_calling_free": "qwen/qwen3.6-plus:free",
+    "tool_calling_paid": "google/gemini-2.5-flash",
+    "best_balance": "nex-agi/deepseek-v3.1-nex-n1",
+    "budget_friendly": "qwen/qwen3.6-plus:free",
+    "most_capable": "openai/gpt-5.4-pro",
+    "default_for_mcp": "qwen/qwen3.6-plus:free"
+  },
+  "free_tier_info": {
+    "description": "OpenRouter offers competitive pricing and some free models",
+    "note": "Check OpenRouter dashboard for latest free tier availability."
+  }
+}

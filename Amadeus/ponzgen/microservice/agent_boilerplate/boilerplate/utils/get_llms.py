@@ -31,27 +31,23 @@ def get_llms(model_name: str="custom-vlm", temperature=0):
     if model_name == "custom-vlm":
         return get_custom_vlm_model()
     
-    # MaiaRouter models (supports tool calling)
+    # OpenRouter models (supports tool calling)
     elif "/" in model_name or model_name in ["gemma-2-9b-it", "gemma-2-27b-it"]:
-        maiarouter_key = os.getenv("MAIAROUTER_API_KEY")
-        if not maiarouter_key:
-            print("WARNING: MAIAROUTER_API_KEY not found. Falling back to custom VLM.")
-            print("To use MaiaRouter models, add MAIAROUTER_API_KEY to your .env file")
+        openrouter_key = os.getenv("OPENROUTER_API_KEY")
+        if not openrouter_key:
+            print("WARNING: OPENROUTER_API_KEY not found. Falling back to custom VLM.")
+            print("To use OpenRouter models, add OPENROUTER_API_KEY to your .env file")
             return get_custom_vlm_model()
         
-        # Format model name for MaiaRouter
-        if not "/" in model_name:
-            model_name = f"google/{model_name}"
-        
-        print(f"Using MaiaRouter model: {model_name}")
+        print(f"Using OpenRouter model: {model_name}")
         
         # Check if using free model and provide helpful message
         if ":free" in model_name:
-            print("💡 Using FREE MaiaRouter model")
+            print("💡 Using FREE OpenRouter model")
         
         return ChatOpenAI(
-            api_key=maiarouter_key,
-            base_url=os.getenv("MAIAROUTER_BASE_URL", "https://api.maiarouter.ai/v1"),
+            api_key=openrouter_key,
+            base_url=os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1"),
             model=model_name,
             temperature=temperature,
             streaming=True,

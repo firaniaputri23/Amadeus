@@ -102,12 +102,14 @@ async function loadAvailableModels() {
 
         // Define Categories and Colors
         const categories = {
-            'Anthropic': { prefix: ['anthropic/', 'maia/claude'], color: '#ff6b6b', models: [] }, // Red
-            'Deepseek': { prefix: ['deepseek/', 'maia/deepseek'], color: '#ffa500', models: [] },  // Orange
-            'Google': { prefix: ['maia/gemini', 'maia/google', 'google/', 'custom-vlm'], color: '#ffd700', models: [] },   // Yellow
-            'Mistral': { prefix: ['mistral/', 'maia/mistral'], color: '#4caf50', models: [] },    // Green
-            'Moonshot': { prefix: ['moonshot/', 'maia/moonshot'], color: '#e040fb', models: [] }, // Purple
-            'OpenAI': { prefix: ['openai/', 'maia/gpt', 'maia/openai'], color: '#4da6ff', models: [] }       // Blue
+            'Anthropic': { prefix: ['anthropic/'], color: '#ff6b6b', logo: '💠', models: [] }, // Red
+            'Deepseek': { prefix: ['deepseek/', 'nex-agi/deepseek'], color: '#ffa500', logo: '🐋', models: [] },  // Orange
+            'Google': { prefix: ['google/', 'custom-vlm'], color: '#ffd700', logo: '🌐', models: [] },   // Yellow
+            'Mistral': { prefix: ['mistral/'], color: '#4caf50', logo: '🌪️', models: [] },    // Green
+            'Moonshot': { prefix: ['moonshot/'], color: '#e040fb', logo: '🌙', models: [] }, // Purple
+            'OpenAI': { prefix: ['openai/'], color: '#4da6ff', logo: '✨', models: [] },       // Blue
+            'Qwen': { prefix: ['qwen/'], color: '#00bcd4', logo: '🐉', models: [] }, // Cyan
+            'X-AI': { prefix: ['x-ai/'], color: '#ffffff', logo: '✖️', models: [] } // White
         };
 
         const otherModels = [];
@@ -122,11 +124,6 @@ async function loadAvailableModels() {
                     placed = true;
                     break;
                 }
-            }
-            // Fallback for generic 'maia/' if not caught above (default to Google/Maia if strictly maia/ but not sub-categorized)
-            if (!placed && modelName.startsWith('maia/')) {
-                categories['Google'].models.push(modelName);
-                placed = true;
             }
 
             if (!placed) {
@@ -171,13 +168,13 @@ async function loadAvailableModels() {
         let finalHtml = '';
 
         // Iterate categories ensuring explicit order
-        const categoryOrder = ['Anthropic', 'Deepseek', 'Google', 'Mistral', 'Moonshot', 'OpenAI'];
+        const categoryOrder = ['Anthropic', 'Deepseek', 'Google', 'Mistral', 'Moonshot', 'OpenAI', 'Qwen', 'X-AI'];
 
         categoryOrder.forEach(catName => {
             const catData = categories[catName];
             if (catData.models.length > 0) {
-                // Style the optgroup label
-                finalHtml += `<optgroup label="${catName}" style="color: ${catData.color}; font-weight: bold;">`;
+                // Style the optgroup label with company logo
+                finalHtml += `<optgroup label="${catData.logo} ${catName}" style="color: ${catData.color}; font-weight: bold;">`;
                 catData.models.forEach(m => {
                     finalHtml += createOption(m);
                 });

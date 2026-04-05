@@ -3,6 +3,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from fastapi.responses import Response, RedirectResponse
 from supabase import Client
 import json
+from datetime import datetime, timezone
 
 # Define public and protected routes
 PUBLIC_ROUTES = ["/", "/public", "/health", "/docs", "/openapi.json", "/mcp-tools/refresh", "/get-llms", "/mcp-logs", "/api/avatars/tools/*", "/api/avatars/agents/*", "/sendgrid/webhook", "/sendgrid/webhook/test", "/sendgrid/webhook/simple", "/sendgrid/outbound"]  # Add any public routes here
@@ -153,7 +154,8 @@ class AuthMiddleware(BaseHTTPMiddleware):
                     self.supabase.table("companies")
                     .insert({
                         "name": "Predefined",
-                        "description": "Template company - not displayed in company listings"
+                        "description": "Template company - not displayed in company listings",
+                        "created_at": datetime.now(timezone.utc).isoformat()
                     })
                     .execute()
                 )

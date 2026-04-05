@@ -60,7 +60,7 @@ Manages Model Context Protocol (MCP) tools:
 
 ### 3. Model Support
 - **Local VLM**: Gemma 2 2B + CLIP (Runs on CPU/GPU)
-- **MaiaRouter**: Access to GPT-4, Claude 3, Llama 3 (requires API key)
+- **OpenRouter**: Access to GPT-4, Claude 3, DeepSeek, Qwen, Gemini (requires API key)
 - **Local LLMs**: Integration with Ollama/LM Studio (planned)
 
 ### 4. Agent Field Autofill Service
